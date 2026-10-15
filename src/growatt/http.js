@@ -37,6 +37,26 @@ export async function exchange(fetchImpl, url, init = {}) {
   return { status: response.status, headers: response.headers, text, json };
 }
 
+/**
+ * What kind of answer came back, for the messages and the probe, without
+ * repeating the body: "json", "empty", or "html" with its <title> (a bot
+ * protection page names itself there), else "text".
+ * @param {{ headers: Headers, text: string, json: unknown }} answer
+ */
+export function describeAnswer({ headers, text, json }) {
+  if (json !== undefined) {
+    return 'json';
+  }
+  if (text.trim() === '') {
+    return 'empty';
+  }
+  const title = text.match(/<title[^>]*>([^<]{0,80})/i)?.[1]?.trim();
+  if (title !== undefined || /html/i.test(headers.get('content-type') ?? '')) {
+    return title ? `html "${title.replace(/\s+/g, ' ')}"` : 'html';
+  }
+  return 'text';
+}
+
 /** "https://openapi.growatt.com/v1/plant/list?x=1" → "v1/plant/list", for the messages. */
 export function endpointOf(url) {
   try {

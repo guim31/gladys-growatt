@@ -18,7 +18,7 @@
 
 import { createHash } from 'node:crypto';
 import { ERROR_CODES, GrowattError } from './errors.js';
-import { endpointOf, exchange, form } from './http.js';
+import { describeAnswer, endpointOf, exchange, form } from './http.js';
 import {
   plantFromClassic,
   readingFromInverter,
@@ -76,6 +76,8 @@ export class ClassicClient {
     this.base = server;
     this.username = username;
     this.password = password;
+    // The ShinePhone server checks for an app-like User-Agent (growattServer
+    // docs): the Android form of the library, with this integration's name.
     this.userAgent = `Dalvik/2.1.0 (Linux; U; Android 12; gladys-growatt) - ${agentId}`;
     this.session = session && session.cookies ? { ...session } : null;
     this.onSession = onSession;
@@ -86,7 +88,9 @@ export class ClassicClient {
   }
 
   headers() {
-    const headers = { 'User-Agent': this.userAgent, Accept: 'application/json' };
+    // The headers of growattServer (requests): User-Agent and a generic
+    // Accept, nothing a browser-only rule could single out.
+    const headers = { 'User-Agent': this.userAgent, Accept: '*/*' };
     const cookies = Object.entries(this.session?.cookies ?? {});
     if (cookies.length > 0) {
       headers.Cookie = cookies.map(([name, value]) => `${name}=${value}`).join('; ');
@@ -124,18 +128,32 @@ export class ClassicClient {
     // A fresh login starts from no cookie at all.
     this.session = null;
     const url = `${this.base}newTwoLoginAPI.do`;
-    const { status, headers, json } = await exchange(this.fetch, url, {
+    const answer = await exchange(this.fetch, url, {
       method: 'POST',
       headers: this.headers(),
       body: form({ userName: this.username, password: hashPassword(this.password) }),
       redirect: 'manual',
     });
+    const { status, headers, json } = answer;
+    if (status === 403 || status === 401) {
+      // Not a wrong password (that is a JSON answer with msg 502): the server
+      // refuses the login request itself. Knocking again does not help.
+      throw new GrowattError(
+        ERROR_CODES.BLOCKED,
+        `login: HTTP ${status} (${describeAnswer(answer)}), refused by the Growatt server`,
+        { httpStatus: status },
+      );
+    }
     if (status >= 400) {
-      throw new GrowattError(ERROR_CODES.NETWORK, `login: HTTP ${status}`);
+      throw new GrowattError(ERROR_CODES.NETWORK, `login: HTTP ${status}`, { httpStatus: status });
     }
     const back = json?.back;
     if (!back || typeof back !== 'object') {
-      throw new GrowattError(ERROR_CODES.PROTOCOL, 'login: unexpected answer');
+      throw new GrowattError(
+        ERROR_CODES.PROTOCOL,
+        `login: unexpected answer (HTTP ${status}, ${describeAnswer(answer)})`,
+        { httpStatus: status },
+      );
     }
     if (!back.success) {
       const msg = String(back.msg ?? '');

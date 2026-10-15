@@ -25,6 +25,9 @@ the notes of the version's GitHub Release.
 - Refresh every 5 minutes by the container itself, within the Growatt limits: readings shared for
   5 minutes, the ShinePhone session kept in `/data`, no retry of refused credentials, a 6-hour
   pause after a Growatt lockout.
+- A ShinePhone login the Growatt server refuses (HTTP 403) is reported as such, with one attempt
+  and a 6-hour pause; the OpenAPI token is the recommended access, the ShinePhone account is
+  presented as possibly blocked by Growatt.
 - Documentation in English, French, German and Spanish.
 
 [Unreleased]: https://github.com/guim31/gladys-growatt/commits/main

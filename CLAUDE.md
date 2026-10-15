@@ -109,6 +109,13 @@ test/fixtures/          Growatt answers (openapi/, shinephone/) and the core fea
   et le cloud Growatt est injoignable depuis une session de code). Les confirmer avec
   `scripts/probe.mjs` et les retours d'utilisateurs, puis les remplacer par de vraies réponses
   anonymisées.
+- **Connexion ShinePhone refusée en HTTP 403** (sonde réelle du 15/10/2026, serveur europe, faux
+  compte), alors que l'OpenAPI répond proprement 10011 au faux jeton. Classé `blocked` (pas
+  `network`) : une seule tentative, pause de 6 h comme un 507, message qui renvoie vers le jeton.
+  En-têtes alignés sur growattServer (User-Agent Android, `Accept: */*`). Si c'est une protection
+  anti-robots, **ne pas la contourner** : le jeton OpenAPI est l'accès recommandé, le compte
+  ShinePhone est présenté comme « peut être bloqué par Growatt ». `scripts/probe.mjs` montre le
+  statut, le type de réponse (titre HTML) et les en-têtes du login pour trois User-Agents.
 - **Ne jamais se connecter à chaque rafraîchissement** (ce que fait Home Assistant, et ce qui
   fait bloquer des comptes) : session gardée dans `/data`, une connexion au plus toutes les
   10 minutes, aucun nouvel essai après un refus d'identifiants, pause de 6 h après un 507.

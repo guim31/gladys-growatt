@@ -446,6 +446,13 @@ export class GrowattApp {
       await this.setConnection(false, `locked:${text}`, MESSAGES.locked(text));
       return;
     }
+    if (err.code === ERROR_CODES.BLOCKED) {
+      const until = this.account?.lockedUntil();
+      const text = until ? clockTime(until) : '';
+      this.issues.fail('account', `${err.message}, paused until ${text}`);
+      await this.setConnection(false, `blocked:${text}`, MESSAGES.blocked(text));
+      return;
+    }
     this.issues.fail('cloud', `The Growatt cloud does not answer (${err.message})`);
     await this.setConnection(false, 'unreachable', TEXT.unreachable);
   }
@@ -501,9 +508,10 @@ export class GrowattApp {
       if (err.code === ERROR_CODES.AUTH) {
         return this.config.auth_mode === 'token' ? TEXT.authToken : TEXT.authPassword;
       }
-      if (err.code === ERROR_CODES.LOCKED) {
+      if (err.code === ERROR_CODES.LOCKED || err.code === ERROR_CODES.BLOCKED) {
         const until = this.account.lockedUntil();
-        return MESSAGES.locked(until ? clockTime(until) : '');
+        const text = until ? clockTime(until) : '';
+        return err.code === ERROR_CODES.LOCKED ? MESSAGES.locked(text) : MESSAGES.blocked(text);
       }
       return MESSAGES.failed(err.message);
     }

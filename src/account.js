@@ -12,8 +12,9 @@
 //   - a refused token or password stops every request until the
 //     configuration changes: retrying a wrong password is how an account
 //     gets locked;
-//   - a ShinePhone "507" (account locked) pauses the account for LOCK_PAUSE_MS,
-//     saved in /data so that a restart does not knock again.
+//   - a ShinePhone "507" (account locked), or a login the server refuses with
+//     HTTP 403 (bot protection), pauses the account for LOCK_PAUSE_MS, saved in
+//     /data so that a restart does not knock again.
 // -----------------------------------------------------------------------------
 
 import { accountKey, ClassicClient } from './growatt/classic.js';
@@ -74,7 +75,7 @@ export class Account {
     this.authError = null;
   }
 
-  /** Until when the account is paused after a "507", or null. */
+  /** Until when the account is paused after a "507" or a refused login (403), or null. */
   lockedUntil() {
     const lock = this.store.get('lock');
     if (!lock || lock.key !== this.key || lock.until <= this.now()) {
@@ -90,7 +91,13 @@ export class Account {
     }
     const until = this.lockedUntil();
     if (until !== null) {
-      throw new GrowattError(ERROR_CODES.LOCKED, 'account paused after a Growatt lockout');
+      const blocked = this.store.get('lock')?.reason === ERROR_CODES.BLOCKED;
+      throw new GrowattError(
+        blocked ? ERROR_CODES.BLOCKED : ERROR_CODES.LOCKED,
+        blocked
+          ? 'account paused: the Growatt server refused the login'
+          : 'account paused after a Growatt lockout',
+      );
     }
   }
 
@@ -104,8 +111,12 @@ export class Account {
       if (safe.code === ERROR_CODES.AUTH) {
         this.authError = safe;
       }
-      if (safe.code === ERROR_CODES.LOCKED) {
-        this.store.set('lock', { key: this.key, until: this.now() + LOCK_PAUSE_MS });
+      if (safe.code === ERROR_CODES.LOCKED || safe.code === ERROR_CODES.BLOCKED) {
+        this.store.set('lock', {
+          key: this.key,
+          until: this.now() + LOCK_PAUSE_MS,
+          reason: safe.code,
+        });
       }
       throw safe;
     }
@@ -267,5 +278,5 @@ export class Account {
 
 /** Errors after which no other request of the account may go out. */
 export function isFatal(err) {
-  return err?.code === ERROR_CODES.AUTH || err?.code === ERROR_CODES.LOCKED;
+  return [ERROR_CODES.AUTH, ERROR_CODES.LOCKED, ERROR_CODES.BLOCKED].includes(err?.code);
 }
