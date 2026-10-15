@@ -1,0 +1,57 @@
+{
+  "plantMoneyText": "3.21/EUR",
+  "plantName": "Maison",
+  "totalMoneyText": "1945.9/EUR",
+  "todayEnergy": "12.5",
+  "totalEnergy": "8456.3",
+  "invTodayPpv": "2456",
+  "nominalPower": 6000,
+  "isHaveStorage": "true",
+  "Co2Reduction": "8430.1",
+  "deviceList": [
+    {
+      "deviceSn": "TLX0A1B2C3",
+      "deviceType": "tlx",
+      "deviceAilas": "Garage",
+      "deviceStatus": "1",
+      "lost": false,
+      "energy": "12.1",
+      "power": "2410.8",
+      "deviceModel": "MIN 5000TL-XH",
+      "lastUpdateTime": "2026-10-15 12:30:00",
+      "datalogSn": "QMN0000001"
+    },
+    {
+      "deviceSn": "MIX9Z8Y7X6",
+      "deviceType": "mix",
+      "deviceAilas": "MIX9Z8Y7X6",
+      "deviceStatus": "6",
+      "lost": false,
+      "energy": "14.2",
+      "power": "2875.5",
+      "deviceModel": "SPH 6000",
+      "lastUpdateTime": "2026-10-15 12:29:00",
+      "datalogSn": "QMN0000002"
+    },
+    {
+      "deviceSn": "INV4D5E6F7",
+      "deviceType": "inverter",
+      "deviceAilas": "",
+      "deviceStatus": "1",
+      "lost": false,
+      "energy": "4.4",
+      "power": "812.0",
+      "deviceModel": "Growatt 3000-S",
+      "lastUpdateTime": "2026-10-15 12:28:00",
+      "datalogSn": "QMN0000003"
+    },
+    {
+      "deviceSn": "NOAH000001",
+      "deviceType": "noah",
+      "deviceAilas": "Balcon",
+      "deviceStatus": "1",
+      "lost": false,
+      "lastUpdateTime": "2026-10-15 12:28:00"
+    }
+  ]
+}

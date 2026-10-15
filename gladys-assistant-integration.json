@@ -1,177 +1,489 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Growatt",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Growatt solar inverters and batteries: production, battery, grid and home energy.",
+    "fr": "Onduleurs solaires et batteries Growatt : production, batterie, réseau et consommation.",
+    "de": "Growatt-Solarwechselrichter und -Batterien: Produktion, Batterie, Netz und Verbrauch.",
+    "es": "Inversores solares y baterías Growatt: producción, batería, red y consumo."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-growatt:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-growatt/main/cover.png",
+  "categories": ["energy"],
+  "transports": ["cloud"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Connect your Growatt account",
+        "fr": "Connecter votre compte Growatt",
+        "de": "Dein Growatt-Konto verbinden",
+        "es": "Conectar su cuenta Growatt"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "An OpenAPI token (recommended: ask Growatt support or your installer), or the ShinePhone app account: its server locks accounts that log in too often, so the integration logs in as rarely as it can. Data is read every 5 minutes.",
+        "fr": "Un jeton OpenAPI (recommandé : demandez-le au support Growatt ou à votre installateur), ou le compte de l'application ShinePhone : son serveur bloque les comptes qui se connectent trop souvent, l'intégration se connecte donc le moins possible.",
+        "de": "Ein OpenAPI-Token (empfohlen: Frag den Growatt-Support oder deinen Installateur) oder das Konto der ShinePhone-App: Sein Server sperrt Konten, die sich zu oft anmelden, daher meldet sich die Integration so selten wie möglich an.",
+        "es": "Un token OpenAPI (recomendado: solicítelo al soporte de Growatt o a su instalador) o la cuenta de la aplicación ShinePhone: su servidor bloquea las cuentas que se conectan demasiado, así que la integración se conecta lo menos posible."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://server.growatt.com",
+          "label": {
+            "en": "Growatt ShineServer",
+            "fr": "Growatt ShineServer",
+            "de": "Growatt ShineServer",
+            "es": "Growatt ShineServer"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
-    },
-    {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
+      "key": "auth_mode",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
-      "required": false,
-      "default": "celsius",
+      "required": true,
+      "default": "token",
+      "label": {
+        "en": "Connection mode",
+        "fr": "Mode de connexion",
+        "de": "Verbindungsart",
+        "es": "Modo de conexión"
+      },
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "token",
+          "label": {
+            "en": "OpenAPI token (recommended)",
+            "fr": "Jeton OpenAPI (recommandé)",
+            "de": "OpenAPI-Token (empfohlen)",
+            "es": "Token OpenAPI (recomendado)"
+          }
+        },
+        {
+          "value": "password",
+          "label": {
+            "en": "ShinePhone account",
+            "fr": "Compte ShinePhone",
+            "de": "ShinePhone-Konto",
+            "es": "Cuenta ShinePhone"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
-      "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+      "key": "api_token",
+      "type": "secret",
+      "label": {
+        "en": "OpenAPI token",
+        "fr": "Jeton OpenAPI",
+        "de": "OpenAPI-Token",
+        "es": "Token OpenAPI"
       },
-      "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "description": {
+        "en": "Token mode only. Kept by Gladys, never written in the logs.",
+        "fr": "Mode jeton seulement. Conservé par Gladys, jamais écrit dans les logs.",
+        "de": "Nur im Token-Modus. Von Gladys gespeichert, nie in die Protokolle geschrieben.",
+        "es": "Solo en modo token. Lo guarda Gladys, nunca se escribe en los registros."
+      }
+    },
+    {
+      "key": "username",
+      "type": "string",
+      "label": {
+        "en": "ShinePhone username",
+        "fr": "Identifiant ShinePhone",
+        "de": "ShinePhone-Benutzername",
+        "es": "Usuario de ShinePhone"
+      },
+      "description": {
+        "en": "ShinePhone account mode only.",
+        "fr": "Mode compte ShinePhone seulement.",
+        "de": "Nur im Modus ShinePhone-Konto.",
+        "es": "Solo en modo cuenta ShinePhone."
+      },
+      "placeholder": {
+        "en": "The login of the ShinePhone app",
+        "fr": "L'identifiant de l'application ShinePhone",
+        "de": "Der Login der ShinePhone-App",
+        "es": "El usuario de la aplicación ShinePhone"
+      }
+    },
+    {
+      "key": "password",
+      "type": "secret",
+      "label": {
+        "en": "ShinePhone password",
+        "fr": "Mot de passe ShinePhone",
+        "de": "ShinePhone-Passwort",
+        "es": "Contraseña de ShinePhone"
+      },
+      "description": {
+        "en": "ShinePhone account mode only. Kept by Gladys, never written in the logs.",
+        "fr": "Mode compte ShinePhone seulement. Conservé par Gladys, jamais écrit dans les logs.",
+        "de": "Nur im Modus ShinePhone-Konto. Von Gladys gespeichert, nie in die Protokolle geschrieben.",
+        "es": "Solo en modo cuenta ShinePhone. Lo guarda Gladys, nunca se escribe en los registros."
+      }
+    },
+    {
+      "key": "server",
+      "type": "select",
+      "default": "europe",
+      "label": {
+        "en": "Growatt server",
+        "fr": "Serveur Growatt",
+        "de": "Growatt-Server",
+        "es": "Servidor Growatt"
+      },
+      "description": {
+        "en": "The region where the account was created.",
+        "fr": "La région où le compte a été créé.",
+        "de": "Die Region, in der das Konto angelegt wurde.",
+        "es": "La región donde se creó la cuenta."
+      },
+      "options": [
+        {
+          "value": "europe",
+          "label": {
+            "en": "Europe and other regions",
+            "fr": "Europe et autres régions",
+            "de": "Europa und andere Regionen",
+            "es": "Europa y otras regiones"
+          }
+        },
+        {
+          "value": "north_america",
+          "label": {
+            "en": "North America",
+            "fr": "Amérique du Nord",
+            "de": "Nordamerika",
+            "es": "América del Norte"
+          }
+        },
+        {
+          "value": "australia",
+          "label": {
+            "en": "Australia and New Zealand",
+            "fr": "Australie et Nouvelle-Zélande",
+            "de": "Australien und Neuseeland",
+            "es": "Australia y Nueva Zelanda"
+          }
+        },
+        {
+          "value": "china",
+          "label": {
+            "en": "China",
+            "fr": "Chine",
+            "de": "China",
+            "es": "China"
+          }
+        }
+      ]
+    },
+    {
+      "key": "plant_ids",
+      "type": "string",
+      "label": {
+        "en": "Plants to follow",
+        "fr": "Installations à suivre",
+        "de": "Zu verfolgende Anlagen",
+        "es": "Instalaciones a seguir"
+      },
+      "description": {
+        "en": "Empty: every plant of the account. Otherwise the plant ids, separated by commas.",
+        "fr": "Vide : toutes les installations du compte. Sinon les identifiants d'installation, séparés par des virgules.",
+        "de": "Leer: alle Anlagen des Kontos. Sonst die Anlagen-IDs, durch Kommas getrennt.",
+        "es": "Vacío: todas las instalaciones de la cuenta. Si no, los identificadores, separados por comas."
+      },
+      "placeholder": {
+        "en": "e.g. 1234567",
+        "fr": "ex. 1234567",
+        "de": "z. B. 1234567",
+        "es": "p. ej. 1234567"
+      }
+    },
+    {
+      "key": "refresh_minutes",
+      "type": "select",
+      "default": "5",
+      "label": {
+        "en": "Refresh interval",
+        "fr": "Intervalle de rafraîchissement",
+        "de": "Aktualisierungsintervall",
+        "es": "Intervalo de actualización"
+      },
+      "description": {
+        "en": "Growatt receives new data every 5 minutes: reading faster brings nothing.",
+        "fr": "Growatt reçoit de nouvelles données toutes les 5 minutes : lire plus vite n'apporte rien.",
+        "de": "Growatt erhält alle 5 Minuten neue Daten: Schnelleres Lesen bringt nichts.",
+        "es": "Growatt recibe datos nuevos cada 5 minutos: leer más rápido no aporta nada."
+      },
+      "options": [
+        {
+          "value": "5",
+          "label": {
+            "en": "5 minutes",
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
+          }
+        },
+        {
+          "value": "10",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "15",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        }
+      ]
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "default": "fr",
+      "label": {
+        "en": "Language of the feature names",
+        "fr": "Langue des noms de fonctionnalités",
+        "de": "Sprache der Funktionsnamen",
+        "es": "Idioma de los nombres de funciones"
+      },
+      "description": {
+        "en": "Used when a device is added to Gladys, and for the inverter status.",
+        "fr": "Utilisée à l'ajout d'un appareil dans Gladys, et pour l'état de l'onduleur.",
+        "de": "Wird beim Hinzufügen eines Geräts zu Gladys und für den Wechselrichterstatus verwendet.",
+        "es": "Se usa al añadir un dispositivo a Gladys y para el estado del inversor."
+      },
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "English",
+            "de": "English",
+            "es": "English"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "Français",
+            "fr": "Français",
+            "de": "Français",
+            "es": "Français"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "Deutsch",
+            "fr": "Deutsch",
+            "de": "Deutsch",
+            "es": "Deutsch"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Español",
+            "fr": "Español",
+            "de": "Español",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "test_connection",
+      "timeout_seconds": 90,
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
+      "description": {
+        "en": "Reads the account: plants and inverters found, and the reason of a failure.",
+        "fr": "Lit le compte : installations et onduleurs trouvés, ou la raison d'un échec.",
+        "de": "Liest das Konto: gefundene Anlagen und Wechselrichter, oder den Grund eines Fehlers.",
+        "es": "Lee la cuenta: instalaciones e inversores encontrados, o el motivo de un fallo."
+      }
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "inverter_status_changed",
+      "label": {
+        "en": "Inverter status changed",
+        "fr": "L'état de l'onduleur a changé",
+        "de": "Status des Wechselrichters geändert",
+        "es": "El estado del inversor ha cambiado"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "An inverter goes into fault, stops reporting to the Growatt cloud, waits or runs again.",
+        "fr": "Un onduleur passe en défaut, ne remonte plus au cloud Growatt, se met en attente ou repart.",
+        "de": "Ein Wechselrichter geht auf Störung, meldet sich nicht mehr bei der Growatt-Cloud, wartet oder läuft wieder.",
+        "es": "Un inversor entra en fallo, deja de comunicar con la nube Growatt, queda en espera o vuelve a funcionar."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Inverter",
+            "fr": "Onduleur",
+            "de": "Wechselrichter",
+            "es": "Inversor"
+          }
         },
         {
-          "key": "target",
+          "key": "status",
           "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "label": {
+            "en": "New status",
+            "fr": "Nouvel état",
+            "de": "Neuer Status",
+            "es": "Nuevo estado"
+          },
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "normal",
+              "label": {
+                "en": "Normal",
+                "fr": "Normal",
+                "de": "Normal",
+                "es": "Normal"
+              }
+            },
+            {
+              "value": "waiting",
+              "label": {
+                "en": "Waiting",
+                "fr": "En attente",
+                "de": "Wartend",
+                "es": "En espera"
+              }
+            },
+            {
+              "value": "fault",
+              "label": {
+                "en": "Fault",
+                "fr": "En défaut",
+                "de": "Störung",
+                "es": "En fallo"
+              }
+            },
+            {
+              "value": "offline",
+              "label": {
+                "en": "Offline",
+                "fr": "Hors ligne",
+                "de": "Offline",
+                "es": "Sin conexión"
+              }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "status",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
-        }
-      ]
-    }
-  ],
-  "scene_actions": [
-    {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
-      },
-      "timeout_seconds": 15,
-      "fields": [
+          "label": {
+            "en": "New status (code)",
+            "fr": "Nouvel état (code)",
+            "de": "Neuer Status (Code)",
+            "es": "Nuevo estado (código)"
+          }
+        },
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ],
-      "outputs": [
+          "key": "previous_status",
+          "type": "string",
+          "label": {
+            "en": "Previous status (code)",
+            "fr": "État précédent (code)",
+            "de": "Vorheriger Status (Code)",
+            "es": "Estado anterior (código)"
+          }
+        },
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "status_label",
+          "type": "string",
+          "label": {
+            "en": "New status",
+            "fr": "Nouvel état",
+            "de": "Neuer Status",
+            "es": "Nuevo estado"
+          }
+        },
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Inverter name",
+            "fr": "Nom de l'onduleur",
+            "de": "Name des Wechselrichters",
+            "es": "Nombre del inversor"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "solar_overview",
+      "label": {
+        "en": "Solar overview",
+        "fr": "Vue solaire",
+        "de": "Solarübersicht",
+        "es": "Resumen solar"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Production, battery, grid and home of a Growatt plant or inverter.",
+        "fr": "Production, batterie, réseau et maison d'une installation ou d'un onduleur Growatt.",
+        "de": "Produktion, Batterie, Netz und Haus einer Growatt-Anlage oder eines Wechselrichters.",
+        "es": "Producción, batería, red y vivienda de una instalación o un inversor Growatt."
+      },
+      "icon": "sun",
+      "settings": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "required": true,
+          "label": {
+            "en": "Plant or inverter",
+            "fr": "Installation ou onduleur",
+            "de": "Anlage oder Wechselrichter",
+            "es": "Instalación o inversor"
+          }
+        }
+      ]
     }
   ]
 }

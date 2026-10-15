@@ -1,0 +1,29 @@
+{
+  "error_code": 0,
+  "error_msg": "",
+  "data": {
+    "mix_sn": "SPH9Z8Y7X6",
+    "time": "2026-10-15 12:29:00",
+    "status": 6,
+    "ppv1": 1480.0,
+    "ppv2": 1395.5,
+    "ppv": 2875.5,
+    "pac": 3310.2,
+    "echarge1Today": 3.1,
+    "echarge1Total": 2210.4,
+    "edischarge1Today": 2.6,
+    "edischarge1Total": 2034.9,
+    "epvtoday": 14.2,
+    "epvTotal": 10422.8,
+    "esystemtoday": 15.1,
+    "eselfToday": 11.3,
+    "etoUserToday": 2.4,
+    "etoUserTotal": 3402.1,
+    "etoGridToday": 3.8,
+    "etogridTotal": 4110.6,
+    "elocalLoadToday": 13.7,
+    "elocalLoadTotal": 9123.4,
+    "echarge1": 2.6,
+    "eChargeToday": 10.7
+  }
+}

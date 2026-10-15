@@ -31,16 +31,25 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
-src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+index.js                SDK wiring only: src/app.js registers the handlers before connect()
+src/app.js              start, discovery, refresh, status trigger, action and widget handlers
+src/account.js          the Growatt account: 5-minute cache, refusals, lockout pause
+src/growatt/openapi.js  OpenAPI V1 client (token in a header, error_code mapping)
+src/growatt/classic.js  ShinePhone client (login, session cookie, password hash, 507)
+src/growatt/model.js    Growatt answers -> normalized readings (W, V, A, kWh, %, °C, status)
+src/growatt/errors.js   GrowattError and its codes (auth, rate_limited, locked, network...)
+src/devices.js          readings -> Gladys devices, features (FEATURES) and states
+src/guards.js           midnight glitches of the Growatt counters
+src/poller.js           the container's own refresh timer (onPoll is a fallback)
+src/store.js            /data/growatt.json: session, lockout, features seen, agent id
+src/widgets.js          "solar_overview" widget content
+src/i18n.js             every user-facing text, en / fr / de / es
+src/config.js           DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/en.md, fr.md, de.md, es.md   user documentation, same sections (test/i18n.test.js)
+scripts/probe.mjs       read-only probe of the real Growatt cloud (fake or real credentials)
+test/                   node --test, SDK fake Gladys + fake Growatt cloud (test/helpers/)
+test/fixtures/          Growatt answers (openapi/, shinephone/) and the core feature table
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,12 +79,52 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German ("du") and Spanish
+  ("usted"): action messages, manifest texts, feature names, widget texts, and
+  `docs/en.md`, `fr.md`, `de.md`, `es.md` with the same sections, kept in sync
+  (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
 ---
+
+# Growatt : ce qu'il faut savoir
+
+**API.** Deux accès, un client chacun, normalisés vers la même lecture (`src/growatt/model.js`) :
+
+- **OpenAPI V1** (jeton, recommandé) : `https://openapi[-us|-au|-cn].growatt.com/v1/`, en-tête
+  `token`, réponses `{ error_code, error_msg, data }`. 10011 = jeton refusé, 10012 = même endpoint
+  appelé il y a moins de 5 minutes, -1 = mauvaise région. Détail pour les types 7 (MIN, TL-X, MOD,
+  MIC : `device/tlx/tlx_last_data`) et 5 (SPH : `mix_data_info` + `mix_last_data`) ; les autres
+  types ne sont que dans les totaux (`plant/data`, affiné par `plant/power`).
+- **ShinePhone** (compte) : `newTwoLoginAPI.do` avec le mot de passe haché (MD5 dont chaque octet
+  de quartet haut 0 prend un « c »), session par cookie. `msg` 502 = mauvais mot de passe,
+  **507 = compte bloqué (~24 h), même en HTTP 200 et sur n'importe quel endpoint**. Session
+  expirée = redirection vers la page de login ou réponse non JSON.
+
+**Pièges et décisions.**
+
+- Développée **sans matériel ni compte** : les fixtures de `test/fixtures/` sont **reconstruites**
+  d'après les champs que lisent growattServer et Home Assistant (leurs tests n'ont que des mocks,
+  et le cloud Growatt est injoignable depuis une session de code). Les confirmer avec
+  `scripts/probe.mjs` et les retours d'utilisateurs, puis les remplacer par de vraies réponses
+  anonymisées.
+- **Ne jamais se connecter à chaque rafraîchissement** (ce que fait Home Assistant, et ce qui
+  fait bloquer des comptes) : session gardée dans `/data`, une connexion au plus toutes les
+  10 minutes, aucun nouvel essai après un refus d'identifiants, pause de 6 h après un 507.
+- **Toute lecture de moins de 5 minutes sort du cache** (`src/account.js`) : scan, test, widget et
+  minuteur ne multiplient jamais les appels. Le minuteur tourne à `intervalle + 20 s`.
+- La **production** d'un MIN est l'énergie PV (`epvTotal`), pas l'énergie AC (`eacTotal`, qui
+  compte aussi la décharge de la batterie d'un hybride) ; `eac*` seulement sans `epv*`.
+- Les **puissances réseau des SPH** par l'OpenAPI sont lues en W, comme Home Assistant ; les mocks
+  de HA ont des valeurs qui ressemblent à des kW (0,5). À vérifier sur une vraie installation.
+- **Un MIN sans batterie envoie `bmsSoc: 0`** : le groupe batterie n'est créé qu'avec un signe de
+  vie (niveau ou énergie > 0) ou sur un SPH ; de même pour le compteur réseau et la maison. Les
+  clés vues sont gardées dans `/data` : une lecture de nuit ne retire jamais une fonctionnalité.
+- L'installation et ses onduleurs comptent la **même production** : un seul des deux dans le
+  suivi d'énergie (dit dans la doc).
+- Les compteurs Growatt valent parfois 0 ou reculent à minuit, et le compteur du jour peut
+  renvoyer la valeur de la veille après sa remise à zéro : `src/guards.js` filtre.
 
 # Notes du mainteneur (guim31)
 

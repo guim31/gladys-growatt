@@ -1,0 +1,42 @@
+{
+  "error_code": 0,
+  "error_msg": "",
+  "data": {
+    "count": 3,
+    "devices": [
+      {
+        "device_sn": "MIN0A1B2C3",
+        "last_update_time": "2026-10-15 12:30:00",
+        "model": "A0B0D0T0PFU1M3S4",
+        "lost": false,
+        "status": 1,
+        "manufacturer": "Growatt",
+        "device_id": 116,
+        "datalogger_sn": "QMN0000001",
+        "type": 7
+      },
+      {
+        "device_sn": "SPH9Z8Y7X6",
+        "last_update_time": "2026-10-15 12:29:00",
+        "model": "S08B00D00T00P0FU01M0007",
+        "lost": false,
+        "status": 6,
+        "manufacturer": "Growatt",
+        "device_id": 117,
+        "datalogger_sn": "QMN0000002",
+        "type": 5
+      },
+      {
+        "device_sn": "INV4D5E6F7",
+        "last_update_time": "2026-10-14 18:02:00",
+        "model": "A0B0D0T0PFU1M3S4",
+        "lost": true,
+        "status": -1,
+        "manufacturer": "Growatt",
+        "device_id": 118,
+        "datalogger_sn": "QMN0000003",
+        "type": 1
+      }
+    ]
+  }
+}

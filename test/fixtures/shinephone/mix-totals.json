@@ -1,0 +1,18 @@
+{
+  "result": 1,
+  "obj": {
+    "echargetoday": "3.1",
+    "echargetotal": "2210.4",
+    "edischarge1Today": "2.6",
+    "edischarge1Total": "2034.9",
+    "elocalLoadToday": "13.7",
+    "elocalLoadTotal": "9123.4",
+    "epvToday": "14.2",
+    "epvTotal": "10422.8",
+    "etoGridToday": "3.8",
+    "etogridTotal": "4110.6",
+    "photovoltaicRevenueToday": "2.1",
+    "photovoltaicRevenueTotal": "1302.5",
+    "unit": "EUR"
+  }
+}

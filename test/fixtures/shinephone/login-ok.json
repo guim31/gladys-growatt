@@ -1,0 +1,24 @@
+{
+  "back": {
+    "success": true,
+    "msg": "",
+    "user": {
+      "id": 7654321,
+      "accountName": "guest",
+      "rightlevel": 1,
+      "timeZone": 1,
+      "userLanguage": "fr",
+      "area": "Europe"
+    },
+    "data": [
+      {
+        "plantName": "Maison",
+        "plantId": "1234567"
+      }
+    ],
+    "service": "1",
+    "quality": "0",
+    "isOpenSmartFamily": "0",
+    "app_code": "1"
+  }
+}
