@@ -38,7 +38,7 @@ What the integration handles:
   never written to the logs nor to `/data`.
 - **`/data/growatt.json`** (readable by the container user only): the ShinePhone session cookie
   and user id, tied to a hash of the server and username (no username in clear), the end of a
-  lockout pause, the feature keys seen per device, a random user-agent suffix.
+  lockout pause, the feature keys seen per device.
 - **Network**: outgoing HTTPS requests to `openapi.growatt.com`, `openapi-us.growatt.com`,
   `openapi-au.growatt.com` or `openapi-cn.growatt.com`. No port is opened, nothing listens.
 - The integration only reads: no command can change a setting of the inverter.

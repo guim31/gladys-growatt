@@ -32,9 +32,11 @@ TL-XH, MOD, MIC) und die Hybride **SPH**; die anderen Geräte zählen in den Sum
 
 ### ShinePhone-Konto
 
-Wähle **ShinePhone-Konto** und gib Benutzername und Passwort der App ein. Diese Schnittstelle ist
-von Growatt nicht dokumentiert, und ihr Server **sperrt ein Konto, das sich zu oft anmeldet**
-(Fehler 507, für etwa einen Tag). Die Integration meldet sich daher einmal an, behält die Sitzung
+Wähle **ShinePhone-Konto** und gib Benutzername und Passwort der App ein. Dieser Zugang **kann von
+Growatt gesperrt werden**: Die Schnittstelle ist nicht dokumentiert, ihr Server akzeptiert nur den
+User-Agent der Growatt-App (die Integration gibt sich wie die Referenzbibliotheken als App aus),
+kann eine Anmeldung mit HTTP 403 ablehnen und **sperrt ein Konto, das sich zu oft anmeldet** (Fehler 507, für etwa einen
+Tag). Nimm lieber ein Token, wenn du kannst. Die Integration meldet sich daher einmal an, behält die Sitzung
 in ihrem Volume `/data` (nie das Passwort) und nutzt sie wieder, auch nach einem Neustart; sie
 meldet sich erst wieder an, wenn die Sitzung abläuft, und nie zweimal innerhalb von 10 Minuten.
 Detaildaten gibt es für String-Wechselrichter, TL-X / MIN und SPH (MIX).
@@ -134,6 +136,9 @@ an Growatt nicht.
   Growatt nicht mehr auf, bis sich die Konfiguration ändert.
 - **„Growatt lehnt Benutzername oder Passwort ab“**: Prüfe sie in der ShinePhone-App und die
   Region. Kein neuer Versuch, bis sich die Konfiguration ändert, um das Konto zu schützen.
+- **„Der Growatt-Server lehnt die ShinePhone-Anmeldung ab (HTTP 403)“**: Der Server lehnt die
+  Anmeldeanfrage selbst ab, egal mit welchem Passwort. Die Integration wartet 6 Stunden, bevor sie
+  es erneut versucht; nutze stattdessen ein OpenAPI-Token.
 - **„Growatt hat das Konto gesperrt“**: Der ShinePhone-Server hat das Konto nach zu vielen
   Anmeldungen gesperrt (andere Apps, die mit demselben Konto angemeldet sind, zählen auch). Die
   Integration wartet 6 Stunden, bevor sie es erneut versucht, auch nach einem Neustart. Ein Token

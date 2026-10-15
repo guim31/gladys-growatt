@@ -34,8 +34,10 @@ l'installation.
 ### Compte ShinePhone
 
 Choisissez **Compte ShinePhone** et saisissez l'identifiant et le mot de passe de l'application.
-Cette interface n'est pas documentée par Growatt, et son serveur **bloque un compte qui se
-connecte trop souvent** (erreur 507, pendant environ une journée). L'intégration se connecte donc
+Cet accès **peut être bloqué par Growatt** : l'interface n'est pas documentée, son serveur n'accepte
+que le User-Agent de l'application Growatt (l'intégration se présente comme l'application, comme
+les bibliothèques de référence), peut refuser une connexion en HTTP 403, et **bloque un compte qui se connecte trop souvent** (erreur 507, pendant
+environ une journée). Préférez un jeton quand c'est possible. L'intégration se connecte donc
 une fois, garde la session dans son volume `/data` (jamais le mot de passe) et la réutilise, même
 après un redémarrage ; elle ne se reconnecte que quand la session expire, et jamais deux fois en
 10 minutes. Les données détaillées existent pour les onduleurs string, les TL-X / MIN et les SPH
@@ -140,6 +142,9 @@ multiplie pas les requêtes vers Growatt.
 - **« Growatt refuse l'identifiant ou le mot de passe »** : vérifiez-les dans l'application
   ShinePhone, ainsi que la région. Aucun nouvel essai tant que la configuration ne change pas,
   pour protéger le compte.
+- **« Le serveur Growatt refuse la connexion ShinePhone (HTTP 403) »** : le serveur refuse la
+  demande de connexion elle-même, quel que soit le mot de passe. L'intégration attend 6 heures
+  avant de réessayer ; utilisez plutôt un jeton OpenAPI.
 - **« Growatt a bloqué le compte »** : le serveur ShinePhone a bloqué le compte après trop de
   connexions (les autres applications connectées avec le même compte comptent aussi).
   L'intégration attend 6 heures avant de réessayer, redémarrage compris. Un jeton évite le

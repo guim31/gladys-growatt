@@ -25,10 +25,10 @@
         "es": "Conectar su cuenta Growatt"
       },
       "description": {
-        "en": "An OpenAPI token (recommended: ask Growatt support or your installer), or the ShinePhone app account: its server locks accounts that log in too often, so the integration logs in as rarely as it can. Data is read every 5 minutes.",
-        "fr": "Un jeton OpenAPI (recommandé : demandez-le au support Growatt ou à votre installateur), ou le compte de l'application ShinePhone : son serveur bloque les comptes qui se connectent trop souvent, l'intégration se connecte donc le moins possible.",
-        "de": "Ein OpenAPI-Token (empfohlen: Frag den Growatt-Support oder deinen Installateur) oder das Konto der ShinePhone-App: Sein Server sperrt Konten, die sich zu oft anmelden, daher meldet sich die Integration so selten wie möglich an.",
-        "es": "Un token OpenAPI (recomendado: solicítelo al soporte de Growatt o a su instalador) o la cuenta de la aplicación ShinePhone: su servidor bloquea las cuentas que se conectan demasiado, así que la integración se conecta lo menos posible."
+        "en": "An OpenAPI token (recommended: ask Growatt support or your installer). The ShinePhone app account may be blocked by Growatt: its server refuses some logins and locks accounts that log in too often. Data is read every 5 minutes.",
+        "fr": "Un jeton OpenAPI (recommandé : demandez-le au support Growatt ou à votre installateur). Le compte de l'application ShinePhone peut être bloqué par Growatt : son serveur refuse certaines connexions et bloque les comptes trop sollicités.",
+        "de": "Ein OpenAPI-Token (empfohlen: Frag den Growatt-Support oder deinen Installateur). Das Konto der ShinePhone-App kann von Growatt gesperrt werden: Sein Server lehnt manche Anmeldungen ab und sperrt Konten, die sich zu oft anmelden.",
+        "es": "Un token OpenAPI (recomendado: solicítelo al soporte de Growatt o a su instalador). La cuenta de la aplicación ShinePhone puede ser bloqueada por Growatt: su servidor rechaza algunos accesos y bloquea las cuentas demasiado solicitadas."
       },
       "links": [
         {
@@ -66,10 +66,10 @@
         {
           "value": "password",
           "label": {
-            "en": "ShinePhone account",
-            "fr": "Compte ShinePhone",
-            "de": "ShinePhone-Konto",
-            "es": "Cuenta ShinePhone"
+            "en": "ShinePhone account (may be blocked)",
+            "fr": "Compte ShinePhone (peut être bloqué)",
+            "de": "ShinePhone-Konto (kann gesperrt werden)",
+            "es": "Cuenta ShinePhone (puede bloquearse)"
           }
         }
       ]
@@ -100,10 +100,10 @@
         "es": "Usuario de ShinePhone"
       },
       "description": {
-        "en": "ShinePhone account mode only.",
-        "fr": "Mode compte ShinePhone seulement.",
-        "de": "Nur im Modus ShinePhone-Konto.",
-        "es": "Solo en modo cuenta ShinePhone."
+        "en": "ShinePhone account mode only. Growatt may block this login: prefer a token.",
+        "fr": "Mode compte ShinePhone seulement. Growatt peut bloquer cette connexion : préférez un jeton.",
+        "de": "Nur im Modus ShinePhone-Konto. Growatt kann diese Anmeldung sperren: Nimm lieber ein Token.",
+        "es": "Solo en modo cuenta ShinePhone. Growatt puede bloquear este acceso: prefiera un token."
       },
       "placeholder": {
         "en": "The login of the ShinePhone app",

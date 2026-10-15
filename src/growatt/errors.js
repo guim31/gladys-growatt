@@ -17,6 +17,12 @@ export const ERROR_CODES = {
   NETWORK: 'network',
   /** The server answered something this integration does not understand. */
   PROTOCOL: 'protocol',
+  /**
+   * The server refuses the request itself (HTTP 403 on the ShinePhone login,
+   * a bot protection or a ban of the address): retrying changes nothing and
+   * may make it worse. Paused like a lockout; the OpenAPI token avoids it.
+   */
+  BLOCKED: 'blocked',
   /** The ShinePhone session expired and the login is held back. */
   SESSION: 'session',
 };
@@ -25,13 +31,14 @@ export class GrowattError extends Error {
   /**
    * @param {string} code one of ERROR_CODES
    * @param {string} message never carries a token, a password or a cookie
-   * @param {{ apiCode?: string|number }} [details] the code Growatt answered
+   * @param {{ apiCode?: string|number, httpStatus?: number }} [details] what Growatt answered
    */
   constructor(code, message, details = {}) {
     super(message);
     this.name = 'GrowattError';
     this.code = code;
     this.apiCode = details.apiCode;
+    this.httpStatus = details.httpStatus;
   }
 }
 

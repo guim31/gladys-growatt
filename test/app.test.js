@@ -280,6 +280,39 @@ test('ShinePhone: a locked account pauses for hours, restart included', async ()
   assert.equal(restarted.gladys.fake.connectionStatus.connected, false);
 });
 
+test('ShinePhone: a login refused with HTTP 403 pauses the account and points to the token', async () => {
+  const store = new Store({ dir: null });
+  const forbidden = () => new Response('<title>Forbidden</title>', { status: 403 });
+  const blocked = await createWorld({
+    config: PASSWORD_CONFIG,
+    store,
+    routes: { 'newTwoLoginAPI.do': forbidden },
+  });
+  await blocked.integration.stop();
+  const status = blocked.gladys.fake.connectionStatus;
+  assert.equal(status.connected, false);
+  assert.match(
+    status.message.en,
+    /refused the ShinePhone login \(HTTP 403\): use an OpenAPI token/,
+  );
+  assert.match(status.message.fr, /utilisez un jeton OpenAPI/);
+  assert.equal(store.get('lock').reason, 'blocked');
+  assert.equal(blocked.growatt.calls('newTwoLoginAPI.do').length, 1, 'one attempt only');
+
+  const ack = await (async () => {
+    const again = await createWorld({
+      config: PASSWORD_CONFIG,
+      store,
+      routes: { 'newTwoLoginAPI.do': forbidden },
+    });
+    const result = await again.gladys.fake.action('test_connection', {});
+    await again.integration.stop();
+    assert.equal(again.growatt.requests.length, 0, 'no knock while paused, restart included');
+    return result;
+  })();
+  assert.match(ack.data.message.en, /use an OpenAPI token/);
+});
+
 test('not configured: a status message, no request', async () => {
   const { gladys, growatt, integration } = await createWorld({ config: {} });
   try {

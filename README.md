@@ -14,7 +14,7 @@ home consumption and inverter status. Read only: it never changes a setting of t
 ## Features
 
 - **Two ways in**: an **OpenAPI V1 token** (recommended, the documented interface for third-party
-  software) or the **ShinePhone account** (username and password), for the four Growatt regions
+  software) or the **ShinePhone account** (username and password, which Growatt may block), for the four Growatt regions
   (Europe and other regions, North America, Australia and New Zealand, China).
 - **One device per plant**: production power, production of the day, production index (kWh).
 - **One device per inverter** read in detail (MIN / TL-X / TL-XH / MOD / MIC and SPH; string

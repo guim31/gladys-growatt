@@ -221,6 +221,14 @@ export const MESSAGES = {
     es: `Growatt bloqueó la cuenta tras demasiadas conexiones: nuevo intento después de ${untilText}.`,
   }),
 
+  /** The ShinePhone server refused the login request itself (HTTP 403). */
+  blocked: (untilText) => ({
+    en: `The Growatt server refused the ShinePhone login (HTTP 403): use an OpenAPI token. New attempt after ${untilText}.`,
+    fr: `Le serveur Growatt refuse la connexion ShinePhone (HTTP 403) : utilisez un jeton OpenAPI. Nouvel essai après ${untilText}.`,
+    de: `Der Growatt-Server lehnt die ShinePhone-Anmeldung ab (HTTP 403): Nutze ein OpenAPI-Token. Neuer Versuch nach ${untilText}.`,
+    es: `El servidor Growatt rechaza el inicio de sesión ShinePhone (HTTP 403): use un token OpenAPI. Nuevo intento después de ${untilText}.`,
+  }),
+
   /** The report of the "Test the connection" action. */
   report: ({ plants, devices, unsupported }) => {
     const ids = unsupported.slice(0, 3).join(', ');

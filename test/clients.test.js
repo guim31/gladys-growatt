@@ -5,9 +5,15 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ClassicClient, LOGIN_MIN_GAP_MS, hashPassword } from '../src/growatt/classic.js';
+import {
+  ClassicClient,
+  LOGIN_MIN_GAP_MS,
+  SHINEPHONE_USER_AGENT,
+  hashPassword,
+} from '../src/growatt/classic.js';
 import { ERROR_CODES } from '../src/growatt/errors.js';
 import { OpenApiClient } from '../src/growatt/openapi.js';
+import { describeAnswer } from '../src/growatt/http.js';
 import { SERVERS } from '../src/config.js';
 import { PASSWORD, TOKEN, USERNAME, createFakeGrowatt, fixture } from './helpers/fakeGrowatt.js';
 
@@ -90,7 +96,6 @@ function classic(growatt, options = {}) {
     server,
     username: USERNAME,
     password: PASSWORD,
-    agentId: '12345',
     session: options.session ?? null,
     onSession: (session) => {
       saved = session;
@@ -114,7 +119,7 @@ test('ShinePhone: the login sends the hashed password, and the session is kept',
   const [login] = growatt.calls('newTwoLoginAPI.do');
   assert.equal(login.body.get('password'), hashPassword(PASSWORD));
   assert.ok(!String(login.body).includes(encodeURIComponent(PASSWORD)), 'no clear password');
-  assert.match(login.headers.get('user-agent'), / - 12345$/);
+  assert.equal(login.headers.get('user-agent'), SHINEPHONE_USER_AGENT);
   assert.deepEqual(saved().cookies, { JSESSIONID: 'S1' });
   assert.equal(saved().userId, '7654321');
   assert.ok(!JSON.stringify(saved()).includes(PASSWORD), 'the password is never saved');
@@ -153,13 +158,20 @@ test('ShinePhone: an expired session is renewed once, then held back', async () 
   assert.equal(growatt.calls('newTwoLoginAPI.do').length, 2);
 });
 
+test('ShinePhone: an unknown account (msg 501) is refused credentials', async () => {
+  const growatt = createFakeGrowatt({
+    routes: { 'newTwoLoginAPI.do': { back: { success: false, msg: '501' } } },
+  });
+  const { client } = classic(growatt);
+  await assert.rejects(client.listPlants(), { code: ERROR_CODES.AUTH, apiCode: '501' });
+});
+
 test('ShinePhone: a wrong password and a locked account', async () => {
   const wrong = createFakeGrowatt();
   const bad = new ClassicClient({
     server,
     username: USERNAME,
     password: 'not-the-password',
-    agentId: '1',
     fetch: wrong.fetch,
   });
   await assert.rejects(bad.listPlants(), { code: ERROR_CODES.AUTH });
@@ -192,4 +204,45 @@ test('ShinePhone: the detailed families', async () => {
     'INV4D5E6F7',
   );
   assert.ok(fixture('shinephone/plant-info.json').deviceList.length === 4);
+});
+
+test('ShinePhone: a login refused with HTTP 403 is "blocked", not a network failure', async () => {
+  const page = new Response(
+    '<html><head><title>Attention Required! | Cloudflare</title></head></html>',
+    {
+      status: 403,
+      headers: { 'content-type': 'text/html; charset=UTF-8' },
+    },
+  );
+  const growatt = createFakeGrowatt({ routes: { 'newTwoLoginAPI.do': () => page.clone() } });
+  const { client } = classic(growatt);
+  await assert.rejects(client.listPlants(), (err) => {
+    assert.equal(err.code, ERROR_CODES.BLOCKED);
+    assert.equal(err.httpStatus, 403);
+    assert.match(err.message, /HTTP 403 \(html "Attention Required! \| Cloudflare"\)/);
+    return true;
+  });
+  // The only User-Agent Growatt accepts there: the app's.
+  const [login] = growatt.calls('newTwoLoginAPI.do');
+  assert.equal(
+    login.headers.get('user-agent'),
+    'ShinePhone/8.1.17 (iPhone; iOS 15.6.1; Scale/2.00)',
+  );
+  assert.equal(login.headers.get('accept'), '*/*');
+});
+
+test('the kind of an answer is described without its body', () => {
+  const answer = (text, type = 'text/plain') => ({
+    text,
+    json: undefined,
+    headers: new Headers({ 'content-type': type }),
+  });
+  assert.equal(describeAnswer({ ...answer('{}'), json: {} }), 'json');
+  assert.equal(describeAnswer(answer('  ')), 'empty');
+  assert.equal(
+    describeAnswer(answer('<title>Just a\n moment...</title>')),
+    'html "Just a moment..."',
+  );
+  assert.equal(describeAnswer(answer('<p>no</p>', 'text/html')), 'html');
+  assert.equal(describeAnswer(answer('forbidden')), 'text');
 });

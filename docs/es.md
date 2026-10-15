@@ -32,9 +32,11 @@ híbridos **SPH**; los demás dispositivos cuentan en los totales de la instalac
 
 ### Cuenta ShinePhone
 
-Elija **Cuenta ShinePhone** e introduzca el usuario y la contraseña de la aplicación. Esta interfaz
-no está documentada por Growatt, y su servidor **bloquea una cuenta que se conecta con demasiada
-frecuencia** (error 507, durante aproximadamente un día). Por eso la integración se conecta una
+Elija **Cuenta ShinePhone** e introduzca el usuario y la contraseña de la aplicación. Este acceso
+**puede ser bloqueado por Growatt**: la interfaz no está documentada, su servidor solo acepta el
+User-Agent de la aplicación Growatt (la integración se presenta como la aplicación, como las
+bibliotecas de referencia), puede rechazar un acceso con HTTP 403 y **bloquea una cuenta que se conecta con demasiada frecuencia** (error 507, durante
+aproximadamente un día). Prefiera un token cuando sea posible. Por eso la integración se conecta una
 vez, guarda la sesión en su volumen `/data` (nunca la contraseña) y la reutiliza, incluso tras un
 reinicio; solo vuelve a conectarse cuando la sesión caduca, y nunca dos veces en 10 minutos. Hay
 datos detallados para los inversores de cadena, TL-X / MIN y SPH (MIX).
@@ -135,6 +137,9 @@ multiplica las solicitudes a Growatt.
   de llamar a Growatt hasta que cambie la configuración.
 - **«Growatt rechaza el usuario o la contraseña»**: compruébelos en la aplicación ShinePhone, así
   como la región. Ningún nuevo intento hasta que cambie la configuración, para proteger la cuenta.
+- **«El servidor Growatt rechaza el inicio de sesión ShinePhone (HTTP 403)»**: el servidor rechaza
+  la propia solicitud de acceso, sea cual sea la contraseña. La integración espera 6 horas antes
+  de volver a intentarlo; use un token OpenAPI en su lugar.
 - **«Growatt bloqueó la cuenta»**: el servidor ShinePhone bloqueó la cuenta tras demasiadas
   conexiones (las demás aplicaciones conectadas con la misma cuenta también cuentan). La
   integración espera 6 horas antes de volver a intentarlo, reinicio incluido. Un token evita el

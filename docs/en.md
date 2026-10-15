@@ -32,9 +32,11 @@ devices are counted in the totals of the plant.
 
 ### ShinePhone account
 
-Choose **ShinePhone account** and enter the username and password of the app. This interface is
-not documented by Growatt, and its server **locks an account that logs in too often** (error 507,
-for about a day). The integration therefore logs in once, keeps the session in its `/data` volume
+Choose **ShinePhone account** and enter the username and password of the app. This access **may
+be blocked by Growatt**: the interface is not documented, its server only accepts the User-Agent of the
+Growatt app (the integration presents itself as the app, like the reference libraries), may refuse
+a login with HTTP 403, and **locks an
+account that logs in too often** (error 507, for about a day). Prefer a token when you can. The integration therefore logs in once, keeps the session in its `/data` volume
 (never the password) and reuses it, even after a restart; it logs in again only when the session
 expires, and never twice within 10 minutes. Detailed data exists for string inverters, TL-X / MIN
 and SPH (MIX).
@@ -131,6 +133,9 @@ read less than 5 minutes ago: clicking it again does not multiply the requests t
   calling Growatt until the configuration changes.
 - **"Growatt refused the username or password"**: check them in the ShinePhone app, and the
   region. No new attempt until the configuration changes, to protect the account.
+- **"The Growatt server refused the ShinePhone login (HTTP 403)"**: the server refuses the login
+  request itself, whatever the password. The integration waits 6 hours before trying again; use
+  an OpenAPI token instead.
 - **"Growatt locked the account"**: the ShinePhone server locked the account after too many
   connections (other apps logging in with the same account count too). The integration waits 6
   hours before trying again, restart included. A token avoids the problem.

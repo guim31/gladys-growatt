@@ -4,22 +4,26 @@
 // clients (src/growatt/). Run it from a machine that has network access:
 //
 //   node scripts/probe.mjs                 fake credentials: the real requests,
-//                                          down to Growatt's refusal
+//                                          down to Growatt's refusal, and what the
+//                                          ShinePhone login answers (status, type
+//                                          of body) for two User-Agents
 //   GROWATT_TOKEN=... node scripts/probe.mjs
 //   GROWATT_USERNAME=... GROWATT_PASSWORD=... node scripts/probe.mjs
 //                                          a real account: plants, devices and
 //                                          normalized readings, read only
 //   GROWATT_SERVER=north_america ...       another region (europe by default)
 //
-// Nothing sensitive is printed: no token, no password, no cookie; plant ids
-// and serial numbers are masked, names are left out. A ShinePhone login is
-// attempted ONCE per run (Growatt locks accounts that log in too often).
+// Nothing sensitive is printed: no token, no password, no cookie, no body;
+// plant ids and serial numbers are masked, names are left out. A real
+// ShinePhone account is logged in ONCE per run (Growatt locks accounts that
+// log in too often).
 // -----------------------------------------------------------------------------
 
 import { randomBytes } from 'node:crypto';
 import { SERVERS } from '../src/config.js';
-import { ClassicClient } from '../src/growatt/classic.js';
+import { ClassicClient, hashPassword } from '../src/growatt/classic.js';
 import { ERROR_CODES } from '../src/growatt/errors.js';
+import { describeAnswer, exchange, form } from '../src/growatt/http.js';
 import { OpenApiClient } from '../src/growatt/openapi.js';
 
 const region = process.env.GROWATT_SERVER ?? 'europe';
@@ -34,6 +38,7 @@ const mask = (id) => {
   return text.length <= 4 ? '***' : `${text.slice(0, 3)}***${text.slice(-1)}`;
 };
 const print = (label, value) => console.log(`${label}: ${JSON.stringify(value)}`);
+const fakeName = () => `gladys-probe-${randomBytes(6).toString('hex')}`;
 
 let failures = 0;
 async function expectRefusal(label, run, expected) {
@@ -43,7 +48,13 @@ async function expectRefusal(label, run, expected) {
     failures += 1;
   } catch (err) {
     const ok = expected.includes(err.code);
-    print(label, { code: err.code, apiCode: err.apiCode ?? null, ok });
+    print(label, {
+      refused: err.code === ERROR_CODES.AUTH ? 'credentials' : err.code,
+      code: err.code,
+      apiCode: err.apiCode ?? null,
+      httpStatus: err.httpStatus ?? null,
+      ok,
+    });
     if (!ok) {
       print(`${label} message`, err.message);
       failures += 1;
@@ -56,8 +67,7 @@ async function readAccount(client) {
   const plants = await client.listPlants();
   print('plants', plants.length);
   for (const plant of plants) {
-    const totals = await client.readPlant(plant.id);
-    const { devices: fromPage, ...plantReading } = totals;
+    const { devices: fromPage, ...plantReading } = await client.readPlant(plant.id);
     print(`plant ${mask(plant.id)}`, plantReading);
     const devices = fromPage ?? (await client.listDevices(plant.id));
     for (const device of devices) {
@@ -79,6 +89,54 @@ async function readAccount(client) {
   }
 }
 
+/**
+ * What the ShinePhone server answers to a login with a fake account, by
+ * User-Agent: the integration's (the iOS app's, the only one Growatt accepts)
+ * and growattServer's Android default (refused with HTTP 403 on 15/10/2026). Status and headers only; the body is described
+ * ("json", "html <title>"...), never printed.
+ */
+async function shinePhoneDiagnosis() {
+  const variants = {
+    integration: new ClassicClient({
+      server,
+      username: '',
+      password: '',
+    }).headers(),
+    growattServer: {
+      'User-Agent':
+        'Dalvik/2.1.0 (Linux; U; Android 12; https://github.com/indykoning/PyPi_GrowattServer)',
+      Accept: '*/*',
+    },
+  };
+  for (const [label, headers] of Object.entries(variants)) {
+    const what = `shinephone login, user agent ${label}`;
+    try {
+      const answer = await exchange(globalThis.fetch, `${server}newTwoLoginAPI.do`, {
+        method: 'POST',
+        headers,
+        body: form({
+          userName: fakeName(),
+          password: hashPassword(randomBytes(12).toString('hex')),
+        }),
+        redirect: 'manual',
+      });
+      print(what, {
+        status: answer.status,
+        contentType: answer.headers.get('content-type'),
+        server: answer.headers.get('server'),
+        cloudflare: answer.headers.has('cf-ray'),
+        location: answer.headers.has('location')
+          ? new URL(answer.headers.get('location'), server).host
+          : null,
+        answer: describeAnswer(answer),
+        msg: answer.json?.back?.msg ?? null,
+      });
+    } catch (err) {
+      print(what, { code: err.code, message: err.message });
+    }
+  }
+}
+
 console.log(`Growatt probe, server ${region} (${server})`);
 
 if (process.env.GROWATT_TOKEN) {
@@ -89,15 +147,17 @@ if (process.env.GROWATT_TOKEN) {
       server,
       username: process.env.GROWATT_USERNAME.trim(),
       password: process.env.GROWATT_PASSWORD,
-      agentId: String(10000 + (randomBytes(2).readUInt16BE() % 90000)),
     }),
   );
 } else {
   // Fake credentials: every request is real, down to Growatt's refusal.
-  const fakeToken = `gladys-probe-${randomBytes(12).toString('hex')}`;
   await expectRefusal(
     'openapi plant/list with a fake token',
-    () => new OpenApiClient({ server, token: fakeToken }).listPlants(),
+    () =>
+      new OpenApiClient({
+        server,
+        token: `gladys-probe-${randomBytes(12).toString('hex')}`,
+      }).listPlants(),
     [ERROR_CODES.AUTH],
   );
   await expectRefusal(
@@ -105,13 +165,13 @@ if (process.env.GROWATT_TOKEN) {
     () =>
       new ClassicClient({
         server,
-        username: `gladys-probe-${randomBytes(6).toString('hex')}`,
+        username: fakeName(),
         password: randomBytes(12).toString('hex'),
-        agentId: '10000',
       }).listPlants(),
-    // 502 wrong account; 507 if Growatt rate-limits the probe machine.
-    [ERROR_CODES.AUTH, ERROR_CODES.LOCKED],
+    // The normal answer to an unknown account: msg 501, credentials refused.
+    [ERROR_CODES.AUTH],
   );
+  await shinePhoneDiagnosis();
 }
 
 process.exit(failures === 0 ? 0 : 1);

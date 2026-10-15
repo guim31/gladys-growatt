@@ -109,6 +109,14 @@ test/fixtures/          Growatt answers (openapi/, shinephone/) and the core fea
   et le cloud Growatt est injoignable depuis une session de code). Les confirmer avec
   `scripts/probe.mjs` et les retours d'utilisateurs, puis les remplacer par de vraies réponses
   anonymisées.
+- **Le serveur ShinePhone n'accepte que le User-Agent de l'appli** (sonde réelle du 15/10/2026,
+  serveur europe, faux compte) : l'UA de l'intégration et celui par défaut de growattServer
+  (Android) prennent un **HTTP 403** (octet-stream, pas de Cloudflare) ; l'UA ShinePhone iOS
+  (`ShinePhone/8.1.17 (iPhone; iOS 15.6.1; Scale/2.00)`, exemples de growattServer) reçoit la
+  réponse normale, JSON `msg: "501"` (compte inconnu = identifiants refusés). Une seule constante,
+  `SHINEPHONE_USER_AGENT` (`src/growatt/classic.js`). Un 403 restant est classé `blocked` : une
+  tentative, pause de 6 h, message qui renvoie vers le jeton. `scripts/probe.mjs` montre statut,
+  type de réponse et en-têtes du login pour les deux UA.
 - **Ne jamais se connecter à chaque rafraîchissement** (ce que fait Home Assistant, et ce qui
   fait bloquer des comptes) : session gardée dans `/data`, une connexion au plus toutes les
   10 minutes, aucun nouvel essai après un refus d'identifiants, pause de 6 h après un 507.
