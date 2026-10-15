@@ -1,6 +1,6 @@
 {
   "name": "gladys-growatt",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Gladys Assistant integration for Growatt solar inverters and batteries, through the Growatt cloud.",
   "type": "module",

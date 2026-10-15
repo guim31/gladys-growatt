@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-15
+
 ### Added
 
 - Growatt solar inverters and batteries in Gladys, through the Growatt cloud: an OpenAPI V1
@@ -30,4 +32,5 @@ the notes of the version's GitHub Release.
   pause. The OpenAPI token stays the recommended access.
 - Documentation in English, French, German and Spanish.
 
-[Unreleased]: https://github.com/guim31/gladys-growatt/commits/main
+[Unreleased]: https://github.com/guim31/gladys-growatt/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/guim31/gladys-growatt/releases/tag/v1.0.1
