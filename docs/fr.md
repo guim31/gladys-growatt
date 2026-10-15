@@ -34,9 +34,9 @@ l'installation.
 ### Compte ShinePhone
 
 Choisissez **Compte ShinePhone** et saisissez l'identifiant et le mot de passe de l'application.
-Cet accès **peut être bloqué par Growatt** : l'interface n'est pas documentée, son serveur refuse
-d'emblée certaines connexions (HTTP 403, une protection anti-robots que l'intégration ne cherche
-pas à contourner) et **bloque un compte qui se connecte trop souvent** (erreur 507, pendant
+Cet accès **peut être bloqué par Growatt** : l'interface n'est pas documentée, son serveur n'accepte
+que le User-Agent de l'application Growatt (l'intégration se présente comme l'application, comme
+les bibliothèques de référence), peut refuser une connexion en HTTP 403, et **bloque un compte qui se connecte trop souvent** (erreur 507, pendant
 environ une journée). Préférez un jeton quand c'est possible. L'intégration se connecte donc
 une fois, garde la session dans son volume `/data` (jamais le mot de passe) et la réutilise, même
 après un redémarrage ; elle ne se reconnecte que quand la session expire, et jamais deux fois en

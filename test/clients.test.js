@@ -5,7 +5,12 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ClassicClient, LOGIN_MIN_GAP_MS, hashPassword } from '../src/growatt/classic.js';
+import {
+  ClassicClient,
+  LOGIN_MIN_GAP_MS,
+  SHINEPHONE_USER_AGENT,
+  hashPassword,
+} from '../src/growatt/classic.js';
 import { ERROR_CODES } from '../src/growatt/errors.js';
 import { OpenApiClient } from '../src/growatt/openapi.js';
 import { describeAnswer } from '../src/growatt/http.js';
@@ -91,7 +96,6 @@ function classic(growatt, options = {}) {
     server,
     username: USERNAME,
     password: PASSWORD,
-    agentId: '12345',
     session: options.session ?? null,
     onSession: (session) => {
       saved = session;
@@ -115,7 +119,7 @@ test('ShinePhone: the login sends the hashed password, and the session is kept',
   const [login] = growatt.calls('newTwoLoginAPI.do');
   assert.equal(login.body.get('password'), hashPassword(PASSWORD));
   assert.ok(!String(login.body).includes(encodeURIComponent(PASSWORD)), 'no clear password');
-  assert.match(login.headers.get('user-agent'), / - 12345$/);
+  assert.equal(login.headers.get('user-agent'), SHINEPHONE_USER_AGENT);
   assert.deepEqual(saved().cookies, { JSESSIONID: 'S1' });
   assert.equal(saved().userId, '7654321');
   assert.ok(!JSON.stringify(saved()).includes(PASSWORD), 'the password is never saved');
@@ -154,13 +158,20 @@ test('ShinePhone: an expired session is renewed once, then held back', async () 
   assert.equal(growatt.calls('newTwoLoginAPI.do').length, 2);
 });
 
+test('ShinePhone: an unknown account (msg 501) is refused credentials', async () => {
+  const growatt = createFakeGrowatt({
+    routes: { 'newTwoLoginAPI.do': { back: { success: false, msg: '501' } } },
+  });
+  const { client } = classic(growatt);
+  await assert.rejects(client.listPlants(), { code: ERROR_CODES.AUTH, apiCode: '501' });
+});
+
 test('ShinePhone: a wrong password and a locked account', async () => {
   const wrong = createFakeGrowatt();
   const bad = new ClassicClient({
     server,
     username: USERNAME,
     password: 'not-the-password',
-    agentId: '1',
     fetch: wrong.fetch,
   });
   await assert.rejects(bad.listPlants(), { code: ERROR_CODES.AUTH });
@@ -211,9 +222,12 @@ test('ShinePhone: a login refused with HTTP 403 is "blocked", not a network fail
     assert.match(err.message, /HTTP 403 \(html "Attention Required! \| Cloudflare"\)/);
     return true;
   });
-  // The request looks like growattServer's: an app User-Agent, a generic Accept.
+  // The only User-Agent Growatt accepts there: the app's.
   const [login] = growatt.calls('newTwoLoginAPI.do');
-  assert.match(login.headers.get('user-agent'), /^Dalvik\/2\.1\.0 \(Linux; U; Android 12; /);
+  assert.equal(
+    login.headers.get('user-agent'),
+    'ShinePhone/8.1.17 (iPhone; iOS 15.6.1; Scale/2.00)',
+  );
   assert.equal(login.headers.get('accept'), '*/*');
 });
 

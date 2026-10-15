@@ -33,9 +33,9 @@ TL-XH, MOD, MIC) und die Hybride **SPH**; die anderen Geräte zählen in den Sum
 ### ShinePhone-Konto
 
 Wähle **ShinePhone-Konto** und gib Benutzername und Passwort der App ein. Dieser Zugang **kann von
-Growatt gesperrt werden**: Die Schnittstelle ist nicht dokumentiert, ihr Server lehnt manche
-Anmeldungen von vornherein ab (HTTP 403, ein Schutz gegen Bots, den die Integration nicht zu
-umgehen versucht) und **sperrt ein Konto, das sich zu oft anmeldet** (Fehler 507, für etwa einen
+Growatt gesperrt werden**: Die Schnittstelle ist nicht dokumentiert, ihr Server akzeptiert nur den
+User-Agent der Growatt-App (die Integration gibt sich wie die Referenzbibliotheken als App aus),
+kann eine Anmeldung mit HTTP 403 ablehnen und **sperrt ein Konto, das sich zu oft anmeldet** (Fehler 507, für etwa einen
 Tag). Nimm lieber ein Token, wenn du kannst. Die Integration meldet sich daher einmal an, behält die Sitzung
 in ihrem Volume `/data` (nie das Passwort) und nutzt sie wieder, auch nach einem Neustart; sie
 meldet sich erst wieder an, wenn die Sitzung abläuft, und nie zweimal innerhalb von 10 Minuten.

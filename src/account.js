@@ -56,7 +56,6 @@ export class Account {
         server,
         username: config.username,
         password: config.password,
-        agentId: store.get('agentId'),
         session: saved?.key === this.key ? saved : null,
         onSession: (session) =>
           store.set('session', session ? { key: this.key, ...session } : null),

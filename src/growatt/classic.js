@@ -27,9 +27,19 @@ import {
   statusOf,
 } from './model.js';
 
+/**
+ * Growatt only accepts the User-Agent of its app on the ShinePhone API: any
+ * other one (growattServer's Android default included) gets an HTTP 403 on
+ * the login, the iOS app's gets the normal JSON answer (probe of 15/10/2026).
+ * The reference libraries present themselves as the app too (growattServer
+ * examples, where this string comes from).
+ */
+export const SHINEPHONE_USER_AGENT = 'ShinePhone/8.1.17 (iPhone; iOS 15.6.1; Scale/2.00)';
+
 /** Two logins never closer than this (Growatt counts 5-minute windows). */
 export const LOGIN_MIN_GAP_MS = 10 * 60_000;
 
+// 501: unknown account, 502: wrong password (both are "credentials refused").
 const INVALID_CREDENTIALS = new Set(['501', '502']);
 const LOCKED = '507';
 
@@ -56,7 +66,6 @@ export class ClassicClient {
    * @param {string} options.server base URL with its trailing slash
    * @param {string} options.username
    * @param {string} options.password
-   * @param {string} options.agentId stable random suffix of the user agent
    * @param {{ cookies?: Record<string,string>, userId?: string, loggedAt?: number }} [options.session]
    *   a session saved earlier
    * @param {(session: object|null) => void} [options.onSession] called when the session changes
@@ -67,7 +76,6 @@ export class ClassicClient {
     server,
     username,
     password,
-    agentId,
     session = null,
     onSession = () => {},
     fetch: fetchImpl = globalThis.fetch,
@@ -76,9 +84,6 @@ export class ClassicClient {
     this.base = server;
     this.username = username;
     this.password = password;
-    // The ShinePhone server checks for an app-like User-Agent (growattServer
-    // docs): the Android form of the library, with this integration's name.
-    this.userAgent = `Dalvik/2.1.0 (Linux; U; Android 12; gladys-growatt) - ${agentId}`;
     this.session = session && session.cookies ? { ...session } : null;
     this.onSession = onSession;
     this.fetch = fetchImpl;
@@ -88,9 +93,7 @@ export class ClassicClient {
   }
 
   headers() {
-    // The headers of growattServer (requests): User-Agent and a generic
-    // Accept, nothing a browser-only rule could single out.
-    const headers = { 'User-Agent': this.userAgent, Accept: '*/*' };
+    const headers = { 'User-Agent': SHINEPHONE_USER_AGENT, Accept: '*/*' };
     const cookies = Object.entries(this.session?.cookies ?? {});
     if (cookies.length > 0) {
       headers.Cookie = cookies.map(([name, value]) => `${name}=${value}`).join('; ');

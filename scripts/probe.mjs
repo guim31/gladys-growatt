@@ -6,7 +6,7 @@
 //   node scripts/probe.mjs                 fake credentials: the real requests,
 //                                          down to Growatt's refusal, and what the
 //                                          ShinePhone login answers (status, type
-//                                          of body) for three User-Agents
+//                                          of body) for two User-Agents
 //   GROWATT_TOKEN=... node scripts/probe.mjs
 //   GROWATT_USERNAME=... GROWATT_PASSWORD=... node scripts/probe.mjs
 //                                          a real account: plants, devices and
@@ -49,6 +49,7 @@ async function expectRefusal(label, run, expected) {
   } catch (err) {
     const ok = expected.includes(err.code);
     print(label, {
+      refused: err.code === ERROR_CODES.AUTH ? 'credentials' : err.code,
       code: err.code,
       apiCode: err.apiCode ?? null,
       httpStatus: err.httpStatus ?? null,
@@ -90,8 +91,8 @@ async function readAccount(client) {
 
 /**
  * What the ShinePhone server answers to a login with a fake account, by
- * User-Agent: the integration's, growattServer's default, and the iOS app's
- * (growattServer examples). Status and headers only; the body is described
+ * User-Agent: the integration's (the iOS app's, the only one Growatt accepts)
+ * and growattServer's Android default (refused with HTTP 403 on 15/10/2026). Status and headers only; the body is described
  * ("json", "html <title>"...), never printed.
  */
 async function shinePhoneDiagnosis() {
@@ -100,15 +101,10 @@ async function shinePhoneDiagnosis() {
       server,
       username: '',
       password: '',
-      agentId: '10000',
     }).headers(),
     growattServer: {
       'User-Agent':
         'Dalvik/2.1.0 (Linux; U; Android 12; https://github.com/indykoning/PyPi_GrowattServer)',
-      Accept: '*/*',
-    },
-    shinePhoneIos: {
-      'User-Agent': 'ShinePhone/8.1.17 (iPhone; iOS 15.6.1; Scale/2.00)',
       Accept: '*/*',
     },
   };
@@ -151,7 +147,6 @@ if (process.env.GROWATT_TOKEN) {
       server,
       username: process.env.GROWATT_USERNAME.trim(),
       password: process.env.GROWATT_PASSWORD,
-      agentId: String(10000 + (randomBytes(2).readUInt16BE() % 90000)),
     }),
   );
 } else {
@@ -172,11 +167,9 @@ if (process.env.GROWATT_TOKEN) {
         server,
         username: fakeName(),
         password: randomBytes(12).toString('hex'),
-        agentId: '10000',
       }).listPlants(),
-    // 502 wrong account; 507 if Growatt rate-limits the probe machine; 403
-    // (blocked) if the server refuses the login request itself.
-    [ERROR_CODES.AUTH, ERROR_CODES.LOCKED, ERROR_CODES.BLOCKED],
+    // The normal answer to an unknown account: msg 501, credentials refused.
+    [ERROR_CODES.AUTH],
   );
   await shinePhoneDiagnosis();
 }

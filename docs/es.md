@@ -33,9 +33,9 @@ híbridos **SPH**; los demás dispositivos cuentan en los totales de la instalac
 ### Cuenta ShinePhone
 
 Elija **Cuenta ShinePhone** e introduzca el usuario y la contraseña de la aplicación. Este acceso
-**puede ser bloqueado por Growatt**: la interfaz no está documentada, su servidor rechaza de
-entrada algunos accesos (HTTP 403, una protección contra robots que la integración no intenta
-eludir) y **bloquea una cuenta que se conecta con demasiada frecuencia** (error 507, durante
+**puede ser bloqueado por Growatt**: la interfaz no está documentada, su servidor solo acepta el
+User-Agent de la aplicación Growatt (la integración se presenta como la aplicación, como las
+bibliotecas de referencia), puede rechazar un acceso con HTTP 403 y **bloquea una cuenta que se conecta con demasiada frecuencia** (error 507, durante
 aproximadamente un día). Prefiera un token cuando sea posible. Por eso la integración se conecta una
 vez, guarda la sesión en su volumen `/data` (nunca la contraseña) y la reutiliza, incluso tras un
 reinicio; solo vuelve a conectarse cuando la sesión caduca, y nunca dos veces en 10 minutos. Hay

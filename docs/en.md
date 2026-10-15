@@ -33,8 +33,9 @@ devices are counted in the totals of the plant.
 ### ShinePhone account
 
 Choose **ShinePhone account** and enter the username and password of the app. This access **may
-be blocked by Growatt**: the interface is not documented, its server refuses some logins outright
-(HTTP 403, an anti-bot protection the integration does not try to get around) and **locks an
+be blocked by Growatt**: the interface is not documented, its server only accepts the User-Agent of the
+Growatt app (the integration presents itself as the app, like the reference libraries), may refuse
+a login with HTTP 403, and **locks an
 account that logs in too often** (error 507, for about a day). Prefer a token when you can. The integration therefore logs in once, keeps the session in its `/data` volume
 (never the password) and reuses it, even after a restart; it logs in again only when the session
 expires, and never twice within 10 minutes. Detailed data exists for string inverters, TL-X / MIN
