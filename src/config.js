@@ -1,45 +1,103 @@
 // -----------------------------------------------------------------------------
 // Integration configuration.
 //
-// The configuration is filled in by the user in Gladys, from the `config_schema`
-// declared in `gladys-assistant-integration.json`. The SDK fetches it for you
-// (`gladys.getConfig()`) and notifies you of every change through
-// `gladys.onConfigUpdated()`.
-//
-// This module only provides defaults and normalizes the received object, so the
-// rest of the code never has to deal with `undefined`.
+// Filled in by the user from the `config_schema` of the manifest. This module
+// provides the defaults (they MUST match the manifest `default` values, see
+// test/manifest.test.js) and normalizes the received object, so the rest of
+// the code never deals with `undefined` or with numbers typed as strings.
 // -----------------------------------------------------------------------------
 
-// Defaults: they MUST stay consistent with the `default` values declared in the
-// `config_schema` of the manifest.
-export const DEFAULT_CONFIG = {
-  latitude: 48.8566, // Paris
-  longitude: 2.3522,
-  unit: 'celsius', // 'celsius' | 'fahrenheit'
-  // Seconds between two reads of the polled sensors. Gladys polls at most once
-  // a minute: slower intervals are applied by skipping polls (see
-  // createPoller in src/devices/index.js).
-  poll_frequency: 300,
-  // Reserved key (NOT in config_schema): because the manifest declares both
-  // 'local' and 'cloud' in its `transports` field, Gladys shows a standard
-  // "Prefer the local connection" toggle and sends the user's choice here.
-  // Read-only for the integration; defaults to true.
-  GLADYS_PREFER_LOCAL: true,
+/** The languages of the Gladys interface, in this order. */
+export const LANGUAGES = ['en', 'fr', 'de', 'es'];
+
+/**
+ * The Growatt servers, by region. The OpenAPI (token) lives under `v1/`, the
+ * ShinePhone API (account) at the root of the same host: one choice serves
+ * both. These are the servers of the Home Assistant integration; the former
+ * `server.growatt.com` hosts redirect there.
+ */
+export const SERVERS = {
+  europe: 'https://openapi.growatt.com/',
+  north_america: 'https://openapi-us.growatt.com/',
+  australia: 'https://openapi-au.growatt.com/',
+  china: 'https://openapi-cn.growatt.com/',
 };
 
 /**
- * Merge the user config with the defaults.
- * @param {Record<string, unknown>} raw config returned by the SDK
+ * Refresh intervals offered, in minutes. Growatt dataloggers upload every
+ * 5 minutes, and the cloud refuses an endpoint called twice within 5 minutes
+ * (OpenAPI error 10012): reading faster would only return the same data, or
+ * nothing.
+ */
+export const REFRESH_MINUTES = [5, 10, 15, 30];
+
+export const DEFAULT_CONFIG = {
+  auth_mode: 'token', // 'token' (OpenAPI V1, recommended) | 'password' (ShinePhone account)
+  api_token: '',
+  username: '',
+  password: '',
+  server: 'europe',
+  plant_ids: '', // empty: every plant of the account; else ids separated by commas
+  refresh_minutes: '5', // a select: the value is a string
+  language: 'fr',
+};
+
+/**
+ * Merge the user config with the defaults and fix the types.
+ * @param {Record<string, unknown>} [raw]
  */
 export function normalizeConfig(raw = {}) {
+  const config = { ...DEFAULT_CONFIG, ...(raw ?? {}) };
+  const refresh = Number(config.refresh_minutes);
   return {
-    ...DEFAULT_CONFIG,
-    ...raw,
-    // Force the types: config may arrive as strings from a form.
-    latitude: Number(raw.latitude ?? DEFAULT_CONFIG.latitude),
-    longitude: Number(raw.longitude ?? DEFAULT_CONFIG.longitude),
-    poll_frequency: Number(raw.poll_frequency ?? DEFAULT_CONFIG.poll_frequency),
-    // The preference is a boolean; anything but an explicit false means true.
-    GLADYS_PREFER_LOCAL: raw.GLADYS_PREFER_LOCAL !== false,
+    auth_mode: config.auth_mode === 'password' ? 'password' : 'token',
+    // A token pasted with spaces or a line break around it is still the token.
+    api_token: String(config.api_token ?? '').trim(),
+    username: String(config.username ?? '').trim(),
+    // A password is kept as typed: spaces may be part of it.
+    password: String(config.password ?? ''),
+    server: Object.hasOwn(SERVERS, config.server) ? config.server : DEFAULT_CONFIG.server,
+    plant_ids: parsePlantIds(config.plant_ids),
+    refresh_minutes: REFRESH_MINUTES.includes(refresh)
+      ? refresh
+      : Number(DEFAULT_CONFIG.refresh_minutes),
+    language: LANGUAGES.includes(config.language) ? config.language : DEFAULT_CONFIG.language,
   };
+}
+
+/** "123, 456" → ['123', '456']; anything else than digits is dropped. */
+function parsePlantIds(raw) {
+  return String(raw ?? '')
+    .split(/[\s,;]+/)
+    .map((id) => id.trim())
+    .filter((id) => /^\d+$/.test(id));
+}
+
+/** The credentials the chosen mode needs are filled in. */
+export function isConfigured(config) {
+  return config.auth_mode === 'token'
+    ? config.api_token !== ''
+    : config.username !== '' && config.password !== '';
+}
+
+/** The server base URL, with its trailing slash. */
+export function serverUrl(config) {
+  return SERVERS[config.server] ?? SERVERS.europe;
+}
+
+/**
+ * The secrets of a config, so the logs and the messages can be checked
+ * against them (test/logs.test.js) and scrubbed.
+ */
+export function secretsOf(config) {
+  return [config.api_token, config.password].filter((secret) => secret && secret.length >= 4);
+}
+
+/**
+ * The period of the container's own timer, in ms: the configured interval,
+ * plus a margin so that two reads of the same endpoint are always more than
+ * 5 minutes apart, whatever the jitter of the timer and of the requests.
+ */
+export function refreshPeriodMs(config) {
+  return config.refresh_minutes * 60_000 + 20_000;
 }

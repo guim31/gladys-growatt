@@ -1,0 +1,26 @@
+{
+  "result": 1,
+  "obj": {
+    "SOC": "64",
+    "chargePower": "0",
+    "fAc": "49.98",
+    "lost": "mix.status.normal",
+    "pLocalLoad": "2.31",
+    "pPv1": "1480",
+    "pPv2": "1395",
+    "pactogrid": "0",
+    "pactouser": "0.18",
+    "pdisCharge1": "0.62",
+    "pmax": "6",
+    "ppv": "2.87",
+    "priorityChoose": "0",
+    "status": "6",
+    "unit": "kW",
+    "vAc1": "232.1",
+    "vBat": "52.4",
+    "vPv1": "365.0",
+    "vPv2": "358.1",
+    "vac1": "232.1",
+    "wBatteryType": "1"
+  }
+}

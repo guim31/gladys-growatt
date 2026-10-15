@@ -1,61 +1,157 @@
-# Demo Devices Template
+# Growatt
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+Follow your **Growatt solar inverters and batteries** in Gladys: solar production, energy of the
+day and production index, battery level and power, grid import and export, home consumption,
+inverter status. The data comes from the Growatt cloud (ShineServer, the ShinePhone app), read
+every 5 minutes: the pace at which the Growatt dataloggers upload. The integration only reads: it
+never changes a setting of the inverter.
 
-## What you get
+> Developed without the hardware: feedback welcome. This integration is not affiliated with
+> Growatt.
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+## Requirements
+
+- A Growatt plant visible in the ShinePhone app or on server.growatt.com, its datalogger
+  (ShineWiFi, ShineLAN, ShineLink) online.
+- One of the two ways in:
+  - an **OpenAPI token** (recommended). Some accounts can create one in the account settings of
+    server.growatt.com; otherwise ask the Growatt support or your installer;
+  - the **username and password of the ShinePhone app**.
+- Gladys 5.1 or later, with internet access.
 
 ## Configuration
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+Open the **Configuration** tab of the integration.
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+### OpenAPI token (recommended)
 
-## Actions
+Choose **OpenAPI token** as connection mode and paste the token. The OpenAPI is the interface
+Growatt documents for third-party software: no login, nothing stored by the integration. Detailed
+data exists for the **MIN** family (MIN, TL-X, TL-XH, MOD, MIC) and the **SPH** hybrids; the other
+devices are counted in the totals of the plant.
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+### ShinePhone account
 
-## Scenes
+Choose **ShinePhone account** and enter the username and password of the app. This access **may
+be blocked by Growatt**: the interface is not documented, its server only accepts the User-Agent of the
+Growatt app (the integration presents itself as the app, like the reference libraries), may refuse
+a login with HTTP 403, and **locks an
+account that logs in too often** (error 507, for about a day). Prefer a token when you can. The integration therefore logs in once, keeps the session in its `/data` volume
+(never the password) and reuses it, even after a restart; it logs in again only when the session
+expires, and never twice within 10 minutes. Detailed data exists for string inverters, TL-X / MIN
+and SPH (MIX).
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+### Other settings
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+- **Growatt server**: the region where the account was created (Europe and other regions, North
+  America, Australia and New Zealand, China).
+- **Plants to follow**: empty for every plant of the account, or plant ids separated by commas.
+- **Refresh interval**: 5 minutes by default, or 10, 15, 30. Reading faster than 5 minutes is
+  refused by Growatt.
+- **Language of the feature names**: the names given to the features when a device is added, and
+  the language of the inverter status (French by default).
 
-## Dashboard
+Save, then click **Test the connection**: the message lists the plants and inverters found. The
+devices appear in the **Discovery** tab: add the ones you want.
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+## Devices
+
+### Plant
+
+One device per Growatt plant, with the totals Growatt computes for the whole plant:
+
+| Feature          | Unit | Meaning                                |
+| ---------------- | ---- | -------------------------------------- |
+| Production power | W    | Power the plant produces now           |
+| Production today | kWh  | Energy produced since midnight         |
+| Production index | kWh  | Energy produced since the installation |
+
+### Inverter
+
+One device per inverter the API reads in detail. The features follow what the inverter reports:
+a battery appears only on an installation that has one, the grid and home features only when a
+Growatt meter (or a CT clamp) is connected.
+
+| Feature                                       | Unit   | Meaning                                         |
+| --------------------------------------------- | ------ | ----------------------------------------------- |
+| Inverter status                               | text   | Normal, Waiting, Fault, Offline                 |
+| Solar power                                   | W      | Power of the solar panels                       |
+| PV1 voltage, PV1 current, PV2…                | V, A   | Each string of panels                           |
+| Inverter output power                         | W      | AC power the inverter delivers                  |
+| Production today, Production index            | kWh    | Solar energy of the day, since the installation |
+| Battery level                                 | %      | State of charge                                 |
+| Battery charge power, Battery discharge power | W      | Power into and out of the battery               |
+| Battery charge index, Battery discharge index | kWh    | Energy charged and discharged since the start   |
+| Grid import power, Grid export power          | W      | Power taken from and sent to the grid           |
+| Grid import index, Grid export index          | kWh    | Energy taken from and sent to the grid          |
+| Home consumption, Home consumption index      | W, kWh | Consumption of the home measured by the meter   |
+| Inverter temperature                          | °C     | Temperature of the inverter                     |
+
+A feature seen for the first time (a battery that wakes up in the morning) is offered as an
+**Update** in the Discovery tab. A feature is never removed: a battery read empty at night keeps
+its features.
+
+## Energy monitoring
+
+The indexes (production, battery, grid, home) are counters in kWh that the energy monitoring of
+Gladys turns into energy per half hour. The plant and its inverters count **the same
+production**: for the production, add the plant **or** its inverters to the energy monitoring, not
+both, or it will be counted twice. The Growatt counters sometimes read 0 or go back a little
+around midnight: the integration filters these glitches.
+
+## Dashboard widget
+
+**Solar overview**: pick a plant or an inverter in its settings. It shows live tiles (production,
+energy of the day, battery, grid import and export, home), the production curve of the day and the
+status of the inverter with the time of its last data.
+
+## Scene trigger
+
+**Inverter status changed**: fires when an inverter goes into fault, stops reporting to the Growatt
+cloud (offline), waits (at night) or runs normally again. Filters: the inverter, the new status.
+Variables for the actions: the new status (code and text), the previous status, the inverter name.
+The first reading after a start never fires it.
+
+## Action
+
+**Test the connection** (Configuration tab): reads the account and tells the plants and inverters
+found, the devices counted in the plant totals only, or the reason of a failure. It reuses the data
+read less than 5 minutes ago: clicking it again does not multiply the requests to Growatt.
+
+## Scene examples
+
+- **Warn of a fault**: trigger "Inverter status changed" with the status Fault and Offline → send
+  a message "The inverter {{device_name}} is now {{status_label}}".
+- **Use the surplus**: every 5 minutes, if the grid export power is above 1500 W and the battery
+  level above 90 % → turn on the water heater plug.
+- **Evening summary**: every day at 21:00 → send a message with the production of the day of the
+  plant.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **"Growatt refused the token"**: check the token and the server region. The integration stops
+  calling Growatt until the configuration changes.
+- **"Growatt refused the username or password"**: check them in the ShinePhone app, and the
+  region. No new attempt until the configuration changes, to protect the account.
+- **"The Growatt server refused the ShinePhone login (HTTP 403)"**: the server refuses the login
+  request itself, whatever the password. The integration waits 6 hours before trying again; use
+  an OpenAPI token instead.
+- **"Growatt locked the account"**: the ShinePhone server locked the account after too many
+  connections (other apps logging in with the same account count too). The integration waits 6
+  hours before trying again, restart included. A token avoids the problem.
+- **"The Growatt cloud does not answer"**: the readings resume on their own.
+- **An inverter shows Offline**: its datalogger no longer uploads (Wi-Fi, power).
+- For the details, set the variable `LOG_LEVEL=debug` on the integration and look at its logs:
+  they never contain the token nor the password.
+
+## Limits
+
+- Developed without the hardware nor a Growatt account: the field names come from the
+  growattServer library and the Home Assistant integration. Feedback welcome, especially on the
+  SPH (the unit of its grid powers) and on the statuses of the less common families.
+- Reading only: no setting of the inverter (charge, discharge, export limit) can be changed.
+- The data is the Growatt cloud's: at best 5 minutes old, and absent when the cloud is down.
+- Detailed data: MIN / TL-X / MOD / MIC and SPH with a token; string inverters, TL-X and SPH with
+  an account. Other families (MAX, SPA, storage, NOAH…) are in the plant totals only.
+- Requests per refresh: with a token, 2 per plant, 1 per MIN, 2 per SPH, and the device list once
+  an hour; with an account, 1 or 2 per plant, 1 per inverter, 2 per SPH.

@@ -1,0 +1,24 @@
+{
+  "error_code": 0,
+  "error_msg": "",
+  "data": {
+    "mix_sn": "SPH9Z8Y7X6",
+    "status": 6,
+    "bmsSOC": 64,
+    "vbat": 52.4,
+    "vpv1": 365.0,
+    "vpv2": 358.1,
+    "ipv1": 4.1,
+    "ipv2": 3.9,
+    "vac1": 232.1,
+    "fac": 49.98,
+    "temp1": 36.5,
+    "pacToGridTotal": 0.0,
+    "pacToUserR": 180.0,
+    "pcharge1": 0,
+    "pdischarge1": 620.0,
+    "chargePowerCommand": 100,
+    "wchargeSOCLowLimit": 90,
+    "acChargeEnable": 0
+  }
+}

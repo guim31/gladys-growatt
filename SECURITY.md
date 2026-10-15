@@ -30,6 +30,19 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+What the integration handles:
+
+- **Secrets**: the OpenAPI token or the ShinePhone password, entered in the configuration and
+  kept by Gladys. They are sent to the Growatt server of the chosen region only (the token in a
+  request header, the password as the MD5-based hash the ShinePhone API expects), over HTTPS, and
+  never written to the logs nor to `/data`.
+- **`/data/growatt.json`** (readable by the container user only): the ShinePhone session cookie
+  and user id, tied to a hash of the server and username (no username in clear), the end of a
+  lockout pause, the feature keys seen per device.
+- **Network**: outgoing HTTPS requests to `openapi.growatt.com`, `openapi-us.growatt.com`,
+  `openapi-au.growatt.com` or `openapi-cn.growatt.com`. No port is opened, nothing listens.
+- The integration only reads: no command can change a setting of the inverter.
+
 Out of scope: Gladys Assistant itself (see its
-[security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+[security policy](https://github.com/GladysAssistant/Gladys/security/policy)), and the Growatt
+cloud, apps and devices.

@@ -1,0 +1,26 @@
+{
+  "error_code": 0,
+  "error_msg": "",
+  "data": {
+    "count": 1,
+    "plants": [
+      {
+        "plant_id": 1234567,
+        "name": "Maison",
+        "status": 1,
+        "city": "Toulouse",
+        "country": "France",
+        "peak_power": 6.0,
+        "create_date": "2024-04-02",
+        "installer": "",
+        "operator": "",
+        "latitude": "",
+        "longitude": "",
+        "image_url": null,
+        "user_id": 7654321,
+        "total_energy": "8456.3",
+        "current_power": "2.456"
+      }
+    ]
+  }
+}

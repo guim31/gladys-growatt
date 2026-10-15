@@ -1,77 +1,104 @@
+// -----------------------------------------------------------------------------
+// The "Solar overview" widget: valid for the core (the SDK's
+// validateWidgetContent: vocabulary and content budget), every bound feature
+// exists on the device, and in every language.
+// -----------------------------------------------------------------------------
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateWidgetContent } from '@gladysassistant/integration-sdk';
-import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
-import { buildDiscoveredDevices } from '../src/devices/index.js';
-import { simulateLanSession } from '../src/devices/plug.js';
-import { DEMO_STATUS_WIDGET, WIDGETS, refreshWidgets } from '../src/widgets.js';
-import { normalizeConfig } from '../src/config.js';
+import { TEXT } from '../src/i18n.js';
+import { PASSWORD_CONFIG, TOKEN_CONFIG, addAll, createWorld } from './helpers/world.js';
 
-const gladys = createFakeGladys();
-const config = normalizeConfig();
-const demoStatus = WIDGETS[DEMO_STATUS_WIDGET];
+const LANGS = ['en', 'fr', 'de', 'es'];
 
-// What the SDK passes to onWidgetGet, plus the config index.js adds.
-const getContent = (cfg = config) =>
-  demoStatus.get(gladys, { settings: {}, language: 'en', units: 'metric', config: cfg });
+function boundFeatures(content) {
+  return content.components.flatMap((component) => [
+    ...(component.device_feature ? [component.device_feature] : []),
+    ...(component.device_features ?? []),
+  ]);
+}
 
-test('the demo_status content is rendered exactly as sent', async () => {
-  // [] = nothing the core would drop, truncate or trim to the content budget.
-  assert.deepEqual(validateWidgetContent(await getContent()), []);
-});
+for (const [label, config] of [
+  ['OpenAPI', TOKEN_CONFIG],
+  ['ShinePhone', PASSWORD_CONFIG],
+]) {
+  test(`the widget of every device is valid and bound to real features (${label})`, async () => {
+    const { gladys, integration } = await createWorld({ config });
+    try {
+      await addAll(gladys);
+      for (const device of gladys.fake.discoveredDevices) {
+        const featureIds = new Set(device.features.map((feature) => feature.external_id));
+        for (const language of LANGS) {
+          const ack = await gladys.fake.widgetGet('solar_overview', {
+            settings: { device: device.external_id },
+            language,
+          });
+          assert.equal(ack.success, true);
+          const { content } = ack.data;
+          assert.deepEqual(validateWidgetContent(content), [], `${device.name} (${language})`);
+          assert.ok(content.components.length <= 8);
+          const bound = boundFeatures(content);
+          assert.ok(bound.length >= 2, `${device.name}: tiles and chart`);
+          for (const id of bound) {
+            assert.ok(featureIds.has(id), `${device.name}: ${id} is not a feature of the device`);
+          }
+        }
+      }
+    } finally {
+      await integration.stop();
+    }
+  });
+}
 
-test('the degraded plug connection content is valid too', async () => {
-  simulateLanSession(false);
+test('the widget of an inverter with a battery: six tiles, the curve, the status', async () => {
+  const { gladys, integration } = await createWorld();
   try {
-    const content = await getContent();
-    assert.deepEqual(validateWidgetContent(content), []);
-    const status = content.components.find((component) => component.type === 'status');
-    assert.ok(
-      status.items.some((item) => item.color === 'warning'),
-      'degraded shows a warning',
-    );
-  } finally {
-    simulateLanSession(true);
-  }
-});
-
-test('the live tiles reference features the integration publishes', async () => {
-  const featureIds = new Set(
-    buildDiscoveredDevices(gladys, config).flatMap((device) =>
-      device.features.map((feature) => feature.external_id),
-    ),
-  );
-  const liveTiles = (await getContent()).components.filter((c) => c.device_feature);
-  assert.ok(liveTiles.length > 0, 'the template demonstrates a device-bound tile');
-  for (const tile of liveTiles) {
-    assert.ok(featureIds.has(tile.device_feature), `unknown feature ${tile.device_feature}`);
-  }
-});
-
-test('every button action of the content is handled and answers a short toast', async () => {
-  const buttons = (await getContent()).components.filter((c) => c.type === 'button' && c.action);
-  assert.ok(buttons.length > 0, 'the template demonstrates a widget action');
-  for (const { action } of buttons) {
-    const message = await demoStatus.action(gladys, {
-      actionKey: action.key,
-      params: action.params ?? {},
-      settings: {},
-      config,
+    await addAll(gladys);
+    const min = gladys.fake.discoveredDevices.find((d) => d.external_id.includes('MIN0A1B2C3'));
+    const {
+      data: { content: data },
+    } = await gladys.fake.widgetGet('solar_overview', {
+      settings: { device: min.external_id },
+      language: 'fr',
     });
-    assert.ok(message.en, 'the toast carries at least the mandatory `en` text');
-    assert.ok(message.en.length <= 200, 'toasts are capped at 200 characters');
+    const types = data.components.map((component) => component.type);
+    assert.deepEqual(types, [
+      'value',
+      'value',
+      'value',
+      'value',
+      'value',
+      'value',
+      'chart',
+      'status',
+    ]);
+    assert.deepEqual(
+      data.components.slice(0, 6).map((component) => component.label),
+      ['Production', "Aujourd'hui", 'Batterie', 'Import réseau', 'Export réseau', 'Maison'],
+    );
+    assert.deepEqual(data.components[7].items[0], {
+      label: 'État',
+      value: 'Normal',
+      color: 'success',
+    });
+  } finally {
+    await integration.stop();
   }
 });
 
-test('an unknown widget action fails, so the user sees the error', async () => {
-  await assert.rejects(
-    demoStatus.action(gladys, { actionKey: 'unknown', params: {}, settings: {}, config }),
-    /Unknown widget action/,
-  );
-});
-
-test('refreshWidgets nudges every widget', () => {
-  const fresh = createFakeGladys();
-  refreshWidgets(fresh);
-  assert.deepEqual(fresh.fake.widgetRefreshes, Object.keys(WIDGETS));
+test('the widget without a device, or with a device gone', async () => {
+  const { gladys, integration } = await createWorld();
+  try {
+    const none = await gladys.fake.widgetGet('solar_overview', { settings: {}, language: 'de' });
+    assert.equal(none.data.content.components[0].text, TEXT.widgetPickDevice.de);
+    const gone = await gladys.fake.widgetGet('solar_overview', {
+      settings: { device: 'ext:test-integration:inverter:GONE' },
+      language: 'es',
+    });
+    assert.equal(gone.data.content.components[0].text, TEXT.widgetUnknownDevice.es);
+    assert.deepEqual(validateWidgetContent(gone.data.content), []);
+  } finally {
+    await integration.stop();
+  }
 });

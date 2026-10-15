@@ -1,0 +1,16 @@
+{
+  "error_code": 0,
+  "error_msg": "",
+  "data": {
+    "peak_power_actual": 6.0,
+    "monthly_energy": "212.4",
+    "last_update_time": "2026-10-15 12:30:00",
+    "current_power": 2.456,
+    "timezone": "GMT+2",
+    "yearly_energy": "4102.7",
+    "today_energy": "12.5",
+    "carbon_offset": "8.43",
+    "efficiency": "",
+    "total_energy": "8456.3"
+  }
+}
